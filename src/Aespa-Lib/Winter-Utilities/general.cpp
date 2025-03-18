@@ -46,8 +46,11 @@ double toDegrees(double radians) {
 	return radians * 180.0 / M_PI;
 }
 
+double lerp(double value1, double value2, double t) {
+	return value1 + (value2 - value1) * t;
+}
 double rangeMap(double x, double inMin, double inMax, double outMin, double outMax) {
-	return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+	return lerp(outMin, outMax, (x - inMin) / (inMax - inMin));
 }
 
 double getScaleFactor(double scaleToMax, std::initializer_list<double> list) {
@@ -87,6 +90,14 @@ std::vector<double> getAbsolute(std::vector<double> list) {
 	return result;
 }
 
+std::vector<double> multiplyVector(std::vector<double> list, double scale) {
+	std::vector<double> result;
+	for (double element : list) {
+		result.push_back(element * scale);
+	}
+	return result;
+}
+
 double euclideanDistance(std::vector<double> point1, std::vector<double> point2) {
 	int dimCount = std::min((int) point1.size(), (int) point2.size());
 	double squaredSum = 0;
@@ -115,14 +126,10 @@ double getChordLength_inches(double arcRadius_inches, double rotatedAngle_polarD
 }
 
 std::pair<double, std::vector<double>> integratePolynomial(std::vector<double> value_dY_dX, double dX) {
-	// Sanitize dX
-	int dXSign = signum(dX);
-	dX = fabs(dX);
-
 	// Integrate
 	const int polyDegree = (int) value_dY_dX.size();
 	std::vector<double> integrated_dY_dX = value_dY_dX;
-	std::vector<double> result_dY_dX = value_dY_dX;
+	std::vector<double> result_dY_dX = value_dY_dX, dXSign;
 	double deltaValue = 0;
 	for (int degree = 0; degree <= polyDegree; degree++) {
 		for (int term = 0; term < degree; term++) {

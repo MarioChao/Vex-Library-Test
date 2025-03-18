@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <functional>
 
 
 namespace pas1_lib {
@@ -17,13 +18,15 @@ namespace trajectories {
 struct PlanPoint {
 	PlanPoint(double time_seconds, double distance, std::vector<double> motion_dV_dT);
 
-	void constrain(Constraint constraint);
+	PlanPoint &constrain(Constraint constraint);
 
 
 	double time_seconds;
 	double distance;
 	std::vector<double> motion_dV_dT;
 };
+
+double getTimeStepFromDistanceStep(PlanPoint node, double distanceStep);
 
 
 // ---------- Trajectory Planner ----------
@@ -33,10 +36,16 @@ public:
 	// Constructor; unit names are just for establishing consistency.
 	TrajectoryPlanner(
 		double distance_inches,
+		double trackWidth_inches,
+		std::function<double(double)> distanceToCurvature_function,
 		std::vector<double> startMotion_dInches_dSec,
 		std::vector<double> endMotion_dInches_dSec
 	);
-	TrajectoryPlanner(double distance_inches);
+	TrajectoryPlanner(
+		double distance_inches,
+		double trackWidth_inches, std::function<double(double)> distanceToCurvature_function
+	);
+	TrajectoryPlanner(double distance_inches, double trackWidth_inches);
 	TrajectoryPlanner();
 
 	TrajectoryPlanner &addConstraintSequence(ConstraintSequence constraints);
@@ -44,13 +53,7 @@ public:
 	TrajectoryPlanner &addConstraint_maxVelocity(double maxVelocity);
 	TrajectoryPlanner &addConstraint_maxAngularMotion(
 		splines::CurveSampler curveSampler,
-		std::vector<double> maxAngularMotion, double trackWidth,
-		int distanceResolution
-	);
-	TrajectoryPlanner &addConstraint_maxCombinedVelocity(
-		splines::CurveSampler curveSampler,
-		double maxCombinedVelocity, double trackWidth,
-		double minLinearVelocity,
+		std::vector<double> maxAngularMotion,
 		int distanceResolution
 	);
 
@@ -67,11 +70,16 @@ public:
 
 private:
 	double distance;
-	std::vector<double> startMotion;
-	std::vector<double> endMotion;
+	double trackWidth;
 	int distance_sign;
 
+	std::vector<double> startMotion;
+	std::vector<double> endMotion;
+
+	std::function<double(double)> distanceToCurvature_function;
+
 	std::vector<ConstraintSequence> constraintSequences;
+	std::vector<ConstraintSequence> track_constraintSequences;
 
 	std::vector<PlanPoint> profilePoints;
 };
