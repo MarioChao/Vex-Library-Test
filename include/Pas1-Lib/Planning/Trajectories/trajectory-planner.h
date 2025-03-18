@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Pas1-Lib/Planning/Trajectories/constraint.h"
-#include "Pas1-Lib/Planning/Splines/curve-sampler.h"
 
 #include <algorithm>
 #include <vector>
@@ -45,17 +44,12 @@ public:
 		double distance_inches,
 		double trackWidth_inches, std::function<double(double)> distanceToCurvature_function
 	);
-	TrajectoryPlanner(double distance_inches, double trackWidth_inches);
+	TrajectoryPlanner(double distance_inches);
 	TrajectoryPlanner();
 
 	TrajectoryPlanner &addConstraintSequence(ConstraintSequence constraints);
 	TrajectoryPlanner &addConstraint_maxMotion(std::vector<double> maxMotion_dV_dT);
-	TrajectoryPlanner &addConstraint_maxVelocity(double maxVelocity);
-	TrajectoryPlanner &addConstraint_maxAngularMotion(
-		splines::CurveSampler curveSampler,
-		std::vector<double> maxAngularMotion,
-		int distanceResolution
-	);
+	TrajectoryPlanner &addConstraint_maxAngularMotion(std::vector<double> maxAngularMotion, int distanceResolution);
 
 	PlanPoint _getNextPlanPoint(PlanPoint node, double distanceStep);
 	std::vector<PlanPoint> _forwardPass(double distanceStep);

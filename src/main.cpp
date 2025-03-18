@@ -1,4 +1,5 @@
 #include "Pas1-Lib/Planning/Trajectories/trajectory-planner.h"
+#include "Pas1-Lib/Planning/Splines/curve-sampler.h"
 #include "Aespa-Lib/Winter-Utilities/general.h"
 #include <stdio.h>
 #include <fstream>

@@ -75,11 +75,11 @@ TrajectoryPlanner::TrajectoryPlanner(
 )
 	: TrajectoryPlanner(distance_inches, trackWidth_inches, distanceToCurvature_function, { 0, 1e5 }, { 0, -1e5 }) {}
 
-TrajectoryPlanner::TrajectoryPlanner(double distance_inches, double trackWidth_inches)
-	: TrajectoryPlanner(distance_inches, trackWidth_inches, nullptr, { 0, 1e5 }, { 0, -1e5 }) {}
+TrajectoryPlanner::TrajectoryPlanner(double distance_inches)
+	: TrajectoryPlanner(distance_inches, 0, nullptr, { 0, 1e5 }, { 0, -1e5 }) {}
 
 TrajectoryPlanner::TrajectoryPlanner()
-	: TrajectoryPlanner(0, 0) {};
+	: TrajectoryPlanner(0) {};
 
 TrajectoryPlanner &TrajectoryPlanner::addConstraintSequence(ConstraintSequence constraints) {
 	constraintSequences.push_back(constraints);
@@ -94,28 +94,14 @@ TrajectoryPlanner &TrajectoryPlanner::addConstraint_maxMotion(std::vector<double
 	return *this;
 }
 
-TrajectoryPlanner &TrajectoryPlanner::addConstraint_maxVelocity(double maxVelocity) {
-	addConstraintSequence(
-		ConstraintSequence()
-		.addConstraints({ {0, {maxVelocity}} })
-	);
-	return *this;
-}
-
-TrajectoryPlanner &TrajectoryPlanner::addConstraint_maxAngularMotion(
-	splines::CurveSampler curveSampler,
-	std::vector<double> maxAngularMotion,
-	int distanceResolution
-) {
-	splines::SplineCurve splineCurve = curveSampler.getSpline();
+TrajectoryPlanner &TrajectoryPlanner::addConstraint_maxAngularMotion(std::vector<double> maxAngularMotion, int distanceResolution) {
 	ConstraintSequence constraintSequence;
 	for (int resolutionI = 0; resolutionI <= distanceResolution; resolutionI++) {
 		// Get distance
 		double x = aespa_lib::genutil::rangeMap(resolutionI, 0, distanceResolution, 0, distance);
 
 		// Get curvature
-		double k = splineCurve.getCurvatureAt(curveSampler.distanceToParam(x));
-		// printf("x: %.3f, k: %.3f\n", x, k);
+		double k = distanceToCurvature_function(x);
 
 		// Max linear velocity = max angular velocity / curvature
 		std::vector<double> maxMotion = maxAngularMotion;
