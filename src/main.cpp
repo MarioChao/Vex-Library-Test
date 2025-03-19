@@ -48,7 +48,7 @@ namespace {
 			})
 			.smoothenCurvature()
 			.addConstraint_maxMotion({maxVel, maxAccel})
-			// .addConstraint_maxMotion({maxVel, maxAccel, maxAccel})
+			// .addConstraint_maxMotion({maxVel, maxAccel, maxAccel * 0.5})
 			.calculateMotionProfile();
 		splines.push_back(spline);
 		splineSamplers.push_back(curveSampler);
@@ -76,7 +76,7 @@ namespace {
 		file_vel << "time, velocity, right vel, left vel, maxV, minV\n";
 		file_accel << "time, accel\n";
 		file_curvature << "time, curvature, smoothed curvature\n";
-		for (int mt = 0; mt <= 1000 * motionProfile.getTotalTime() + 1; mt += 20) {
+		for (int mt = 0; mt <= 1000 * motionProfile.getTotalTime() + 1; mt += 5) {
 			double t = mt / 1000.0;
 			std::pair<double, std::vector<double>> motion = motionProfile.getMotionAtTime(t);
 			double distance = motion.first;

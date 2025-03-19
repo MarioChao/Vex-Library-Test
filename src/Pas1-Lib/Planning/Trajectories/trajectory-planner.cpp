@@ -47,16 +47,15 @@ PlanPoint &PlanPoint::maximizeLastDegree(Constraint constraint) {
 }
 
 double getTimeStepFromDistanceStep(PlanPoint node, double distanceStep) {
-	// printf("%.3f ", distanceStep);
-	// for (double a : node.motion_dV_dT) printf("%.3f ", a);
-	// printf("\n");
+
 	int stepSign = aespa_lib::genutil::signum(distanceStep);
 
 	// Newton's method
-	int trials = 0;
 	double x = 0;
-	std::pair<double, double> newtonRange = { -1e5, 1e5 };
-	for (int iter = 0; iter < 100; iter++) {
+	double lastX = 0;
+	bool isLastOut = false;
+	std::pair<double, double> newtonRange = { 0, 1e5 };
+	for (int iter = 0; iter < 20; iter++) {
 		// Get f(x) and f'(x)
 		std::pair<double, std::vector<double>> integ = (
 			aespa_lib::genutil::integratePolynomial(node.motion_dV_dT, x)
@@ -65,29 +64,89 @@ double getTimeStepFromDistanceStep(PlanPoint node, double distanceStep) {
 		double f_p_x = integ.second[0];
 
 		// Extreme conditions
-		if (fabs(f_p_x) < 1e-6 || fabs(f_x / f_p_x) > 2 * fabs(distanceStep)) {
+		if (fabs(f_p_x) < 1e-6) {
+			// printf("skip %.3f\n", x);
 			x += 0.1 * stepSign;
 			continue;
 		}
 
 		// Not converging
-		if (x < newtonRange.first || newtonRange.second < x) {
-			break;
-		}
-
-		// Converge
 		double dx = -f_x / f_p_x;
-		if (fabs(dx) < 1e-5) {
-			return x;
+		double newX = x + dx;
+		bool newXIsOut = newX < newtonRange.first || newtonRange.second < newX;
+		lastX = newX;
+		if (newXIsOut) {
+			// Further out
+			int outSign = aespa_lib::genutil::signum(newX - newtonRange.second);
+			int deltaOutSign = aespa_lib::genutil::signum(newX - lastX);
+			if (isLastOut && outSign == deltaOutSign) {
+				break;
+			}
+			// printf("out %.3f, %.3f %.3f\n", x, newtonRange.first, newtonRange.second);
+			x -= 0.1 * outSign;
+			isLastOut = true;
+			continue;
 		}
+		isLastOut = false;
+
+		// Converged
+		if (fabs(dx) < 1e-5) return x;
 
 		// Iterate
-		// printf("x: %.3f, %.3f, %.3f\n", x, f_x, f_p_x);
 		if (dx < 0) newtonRange.second = fmin(newtonRange.second, x);
 		else newtonRange.first = fmax(newtonRange.first, x);
-		x += dx;
-		trials++;
+		x = newX;
 	}
+
+	// Newton's method on derivative
+	// printf("Second\n");
+	// printf("%.3f ", distanceStep);
+	// for (double a : node.motion_dV_dT) printf("%.3f ", a);
+	// printf("\n");
+	// printf("CNT: %.3f\n", x);
+	x = 0;
+	newtonRange = { 0, 1e5 };
+	for (int iter = 0; iter < 20; iter++) {
+		// Get f(x) and f'(x)
+		std::pair<double, std::vector<double>> integ = (
+			aespa_lib::genutil::integratePolynomial(node.motion_dV_dT, x)
+		);
+		double f_x = integ.second[0];
+		double f_p_x = integ.second[1];
+
+		// Extreme conditions
+		if (fabs(f_p_x) < 1e-6) {
+			x += 0.1 * stepSign;
+			continue;
+		}
+
+		// Not converging
+		double dx = -f_x / f_p_x;
+		double newX = x + dx;
+		bool newXIsOut = newX < newtonRange.first || newtonRange.second < newX;
+		lastX = newX;
+		if (newXIsOut) {
+			// Further out
+			int outSign = aespa_lib::genutil::signum(newX - newtonRange.second);
+			int deltaOutSign = aespa_lib::genutil::signum(newX - lastX);
+			if (isLastOut && outSign == deltaOutSign) {
+				break;
+			}
+			x -= 0.1 * outSign;
+			isLastOut = true;
+			continue;
+		}
+		isLastOut = false;
+
+		// Converged
+		if (fabs(dx) < 1e-5) return x;
+
+		// Iterate
+		if (dx < 0) newtonRange.second = fmin(newtonRange.second, x);
+		else newtonRange.first = fmax(newtonRange.first, x);
+		x = newX;
+	}
+
 	// printf("Newton's method failed :(\n");
 	return -1;
 }
@@ -227,19 +286,10 @@ PlanPoint TrajectoryPlanner::_getNextPlanPoint(PlanPoint node, double distanceSt
 
 	// Binary search for time step
 	double timeStep_seconds = getTimeStepFromDistanceStep(node, fabs(distanceStep));
-	if (timeStep_seconds < 0) {
-		int trials = 0;
-		double rawDistanceStep = distanceStep;
-		while (timeStep_seconds < 0 && trials < 32) {
-			distanceStep *= 0.9;
-			timeStep_seconds = getTimeStepFromDistanceStep(node, fabs(distanceStep));
-			trials++;
-		}
-		if (trials >= 32) {
-			printf("SKIPPED\n");
-			node.motion_dV_dT = std::vector<double>((int) node.motion_dV_dT.size());
-			return node;
-		}
+	if (timeStep_seconds <= 1e-5) {
+		printf("SKIPPED\n");
+		node.motion_dV_dT = std::vector<double>((int) node.motion_dV_dT.size());
+		return node;
 	}
 	// printf("ST: %.3f, TS: %.3f\n", distanceStep, timeStep_seconds);
 
@@ -247,7 +297,8 @@ PlanPoint TrajectoryPlanner::_getNextPlanPoint(PlanPoint node, double distanceSt
 	auto integral = aespa_lib::genutil::integratePolynomial(
 		node.motion_dV_dT, timeStep_seconds
 	);
-	double newDistance = oldDistance + integral.first * aespa_lib::genutil::signum(distanceStep);
+	distanceStep = integral.first * aespa_lib::genutil::signum(distanceStep);
+	double newDistance = oldDistance + distanceStep;
 	double time_seconds = node.time_seconds + timeStep_seconds;
 	PlanPoint newNode(time_seconds, newDistance, integral.second);
 
@@ -416,13 +467,15 @@ TrajectoryPlanner &TrajectoryPlanner::calculateMotionProfile() {
 	auto pass_constraintSequences = constraintSequencesFromPlanPoints(backward_planningPoints);
 	center_constraintSequences.push_back(pass_constraintSequences.first);
 	track_constraintSequences.push_back(pass_constraintSequences.second);
-	// double maxTime = backward_planningPoints[0].time_seconds;
-	// for (PlanPoint &point : backward_planningPoints) {
-	// 	// Fix time
-	// 	point.time_seconds = maxTime - point.time_seconds;
-	// }
-	// profilePoints = backward_planningPoints;
-	// return *this;
+	if (false) {
+		double maxTime = backward_planningPoints[0].time_seconds;
+		for (PlanPoint &point : backward_planningPoints) {
+			// Fix time
+			point.time_seconds = maxTime - point.time_seconds;
+		}
+		profilePoints = backward_planningPoints;
+		return *this;
+	}
 
 	std::vector<PlanPoint> forward_planningPoints;
 	int extraPasses = 0;

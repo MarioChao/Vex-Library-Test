@@ -50,12 +50,14 @@ public:
 	TrajectoryPlanner();
 
 	TrajectoryPlanner &setCurvatureFunction(std::function<double(double)> distanceToCurvature_function);
+
+	// alpha should change with distanceResolution
 	TrajectoryPlanner &smoothenCurvature(double alpha = 0.7);
 	double getCurvatureAtDistance(double distance);
 
 	TrajectoryPlanner &addConstraintSequence(ConstraintSequence constraints);
 
-	/// @param maxMotion_dV_dT Recommend only up to 3 degrees, and not too small.
+	/// @param maxMotion_dV_dT Recommend only up to 3 degrees (jerk/jolt), and not too small.
 	TrajectoryPlanner &addConstraint_maxMotion(std::vector<double> maxMotion_dV_dT);
 	TrajectoryPlanner &addConstraint_maxAngularMotion(std::vector<double> maxAngularMotion);
 

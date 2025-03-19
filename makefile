@@ -7,7 +7,7 @@ SRC_DEPS = $(shell find include -type f -name '*.h')
 SRC_DEPS += $(shell find include -type f -name '*.hpp')
 SRC_C = $(shell find src -type f -name '*.cpp')
 
-OBJ = $(addprefix build/, $(addsuffix .o, $(basename $(SRC_C))) )
+OBJ = $(addprefix build/, $(addsuffix .o, $(basename $(SRC_C))))
 
 build/%.o: %.cpp ${SRC_DEPS}
 	$(info CC $<)
