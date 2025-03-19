@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Pas1-Lib/Planning/Trajectories/constraint.h"
+#include "Pas1-Lib/Planning/Trajectories/curvature.h"
 
 #include <algorithm>
 #include <vector>
@@ -18,6 +19,7 @@ struct PlanPoint {
 	PlanPoint(double time_seconds, double distance, std::vector<double> motion_dV_dT);
 
 	PlanPoint &constrain(Constraint constraint);
+	PlanPoint &maximizeLastDegree(Constraint constraint);
 
 
 	double time_seconds;
@@ -36,25 +38,34 @@ public:
 	TrajectoryPlanner(
 		double distance_inches,
 		double trackWidth_inches,
-		std::function<double(double)> distanceToCurvature_function,
+		int distanceResolution,
 		std::vector<double> startMotion_dInches_dSec,
 		std::vector<double> endMotion_dInches_dSec
 	);
 	TrajectoryPlanner(
-		double distance_inches,
-		double trackWidth_inches, std::function<double(double)> distanceToCurvature_function
+		double distance_inches, double trackWidth_inches, int distanceResolution
 	);
+	TrajectoryPlanner(double distance_inches, double trackWidth_inches);
 	TrajectoryPlanner(double distance_inches);
 	TrajectoryPlanner();
 
+	TrajectoryPlanner &setCurvatureFunction(std::function<double(double)> distanceToCurvature_function);
+	TrajectoryPlanner &smoothenCurvature(double alpha = 0.7);
+	double getCurvatureAtDistance(double distance);
+
 	TrajectoryPlanner &addConstraintSequence(ConstraintSequence constraints);
+
+	/// @param maxMotion_dV_dT Recommend only up to 3 degrees, and not too small.
 	TrajectoryPlanner &addConstraint_maxMotion(std::vector<double> maxMotion_dV_dT);
-	TrajectoryPlanner &addConstraint_maxAngularMotion(std::vector<double> maxAngularMotion, int distanceResolution);
+	TrajectoryPlanner &addConstraint_maxAngularMotion(std::vector<double> maxAngularMotion);
 
 	PlanPoint _getNextPlanPoint(PlanPoint node, double distanceStep);
 	std::vector<PlanPoint> _forwardPass(double distanceStep);
 	std::vector<PlanPoint> _backwardPass(double distanceStep);
-	TrajectoryPlanner &calculateMotionProfile(int distanceResolution = 100);
+	std::pair<ConstraintSequence, ConstraintSequence> constraintSequencesFromPlanPoints(
+		std::vector<PlanPoint> nodes
+	);
+	TrajectoryPlanner &calculateMotionProfile();
 
 	double getTotalTime();
 
@@ -67,12 +78,15 @@ private:
 	double trackWidth;
 	int distance_sign;
 
+	int distanceResolution;
+
 	std::vector<double> startMotion;
 	std::vector<double> endMotion;
 
-	std::function<double(double)> distanceToCurvature_function;
+	CurvatureSequence curvatureSequence;
 
 	std::vector<ConstraintSequence> constraintSequences;
+	std::vector<ConstraintSequence> center_constraintSequences;
 	std::vector<ConstraintSequence> track_constraintSequences;
 
 	std::vector<PlanPoint> profilePoints;

@@ -41,11 +41,15 @@ namespace {
 			.calculateByResolution(spline.getTRange().second * 10);
 		TrajectoryPlanner splineTrajectoryPlan = TrajectoryPlanner(
 			curveSampler.getDistanceRange().second, trackWidth,
-			[&](double d) -> double {
+			64
+		)
+			.setCurvatureFunction([&](double d) -> double {
 				return spline.getCurvatureAt(curveSampler.distanceToParam(d));
 			})
+			.smoothenCurvature()
 			.addConstraint_maxMotion({maxVel, maxAccel})
-			.calculateMotionProfile(64);
+			// .addConstraint_maxMotion({maxVel, maxAccel, maxAccel})
+			.calculateMotionProfile();
 		splines.push_back(spline);
 		splineSamplers.push_back(curveSampler);
 		splineTrajectoryPlans.push_back(splineTrajectoryPlan);
@@ -55,8 +59,8 @@ namespace {
 	void runFollowSpline() {
 		aespa_lib::datas::Linegular lg = splines[pathIndex].getLinegularAt(0, willReverse[pathIndex]);
 		SplineCurve spline = splines[pathIndex];
-		TrajectoryPlanner motionProfile = splineTrajectoryPlans[pathIndex];
 		CurveSampler curveSampler = splineSamplers[pathIndex];
+		TrajectoryPlanner &motionProfile = splineTrajectoryPlans[pathIndex];
 		bool isReversed = willReverse[pathIndex];
 	
 		std::string filePrefix = std::string("dev-files/") + "path" + std::to_string(pathIndex);
@@ -71,15 +75,18 @@ namespace {
 		file_dis << "time, distance\n";
 		file_vel << "time, velocity, right vel, left vel, maxV, minV\n";
 		file_accel << "time, accel\n";
-		file_curvature << "time, curvature\n";
-		for (double t = 0; t <= motionProfile.getTotalTime() + 1e-5; t += 0.001) {
+		file_curvature << "time, curvature, smoothed curvature\n";
+		for (int mt = 0; mt <= 1000 * motionProfile.getTotalTime() + 1; mt += 20) {
+			double t = mt / 1000.0;
 			std::pair<double, std::vector<double>> motion = motionProfile.getMotionAtTime(t);
 			double distance = motion.first;
+			int degree = motion.second.size();
 			double velocity = motion.second[0];
-			double acceleration = motion.second[1];
-			double curvature = spline.getCurvatureAt(curveSampler.distanceToParam(distance));
-			double rightVelocity = velocity * (1 + curvature * trackWidth / 2);
-			double leftVelocity = velocity * (1 - curvature * trackWidth / 2);
+			double acceleration = (degree >= 2) ? motion.second[1] : 0;
+			double curvature = motionProfile.getCurvatureAtDistance(distance);
+			double angularVelocity_radPerSec = curvature * trackWidth / 2;
+			double leftVelocity = velocity * (1 - angularVelocity_radPerSec);
+			double rightVelocity = velocity * (1 + angularVelocity_radPerSec);
 
 			file_dis << t;
 			file_dis << ", " << distance;
@@ -92,6 +99,7 @@ namespace {
 			file_accel << ", " << acceleration;
 			file_accel << '\n';
 			file_curvature << t;
+			file_curvature << ", " << spline.getCurvatureAt(curveSampler.distanceToParam(distance));
 			file_curvature << ", " << curvature;
 			file_curvature << '\n';
 		}
@@ -111,6 +119,11 @@ void testTrajectory() {
 		{2.62, 0.09}, {1.52, 0.49}, {0.67, 1.35}, {1.03, 1.97}, {1.54, 1.8},
 		{2.06, 1.95}, {2.49, 1.34}, {1.54, 0.48}, {0.48, 0.05},
 	}));
+	pushNewSpline(SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
+		{2.15, -0.38}, {0.98, 1}, {0.98, 5.02}, {3.02, 1}, {5.02, 5},
+		{5.04, 1.02}, {3.95, -0.38}
+	}));
+	runFollowSpline();
 	runFollowSpline();
 }
 
