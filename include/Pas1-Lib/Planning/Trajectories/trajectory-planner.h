@@ -49,7 +49,9 @@ public:
 	TrajectoryPlanner(double distance_inches);
 	TrajectoryPlanner();
 
-	TrajectoryPlanner &setCurvatureFunction(std::function<double(double)> distanceToCurvature_function);
+	TrajectoryPlanner &setCurvatureFunction(
+		std::function<double(double)> distanceToCurvature_function
+	);
 
 	// alpha should change with distanceResolution
 	TrajectoryPlanner &smoothenCurvature(double alpha = 0.7);
@@ -84,9 +86,9 @@ private:
 
 	std::vector<double> startMotion;
 	std::vector<double> endMotion;
-
+	
 	CurvatureSequence curvatureSequence;
-
+	
 	std::vector<ConstraintSequence> constraintSequences;
 	std::vector<ConstraintSequence> center_constraintSequences;
 	std::vector<ConstraintSequence> track_constraintSequences;

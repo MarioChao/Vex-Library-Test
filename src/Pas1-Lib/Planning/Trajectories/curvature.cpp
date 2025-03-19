@@ -56,6 +56,31 @@ double CurvatureSequence::getCurvatureAtDistance(double distance) {
 	return result;
 }
 
+double CurvatureSequence::getControlPointDistance(double distance, bool nextPoint) {
+	sort();
+
+	// Binary search
+	int bs_l, bs_r, bs_m;
+	int bs_result = -1;
+	bs_l = 0;
+	bs_r = (int) points.size() - 1;
+	while (bs_l <= bs_r) {
+		bs_m = bs_l + (bs_r - bs_l) / 2;
+		CurvaturePoint &point = points[bs_m];
+		if (point.distance <= distance + 1e-5) {
+			bs_result = bs_m;
+			bs_l = bs_m + 1;
+		} else {
+			bs_r = bs_m - 1;
+		}
+	}
+	if (nextPoint) bs_result++;
+	if (bs_result == -1) return distance;
+	if (bs_result >= (int) points.size()) return distance;
+
+	return points[bs_result].distance;
+}
+
 void CurvatureSequence::sort() {
 	if (!isSorted) {
 		std::sort(points.begin(), points.end(), [&](CurvaturePoint a, CurvaturePoint b) {

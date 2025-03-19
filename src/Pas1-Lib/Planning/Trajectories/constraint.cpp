@@ -119,6 +119,21 @@ std::vector<Constraint> getConstraintsAtDistance(
 	return result;
 }
 
+std::vector<Constraint> getConstraintsAtIndex(
+	std::vector<ConstraintSequence> constraintSequences, int index
+) {
+	std::vector<Constraint> result;
+	for (ConstraintSequence &sequence : constraintSequences) {
+		if (index < (int) sequence.constraints.size()) {
+			Constraint constraint = sequence.constraints[index];
+			result.push_back(constraint);
+		}
+	}
+
+	// Return
+	return result;
+}
+
 
 }
 }

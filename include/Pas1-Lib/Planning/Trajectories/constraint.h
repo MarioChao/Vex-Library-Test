@@ -41,6 +41,10 @@ std::vector<Constraint> getConstraintsAtDistance(
 	std::vector<ConstraintSequence> constraintSequences, double distance
 );
 
+std::vector<Constraint> getConstraintsAtIndex(
+	std::vector<ConstraintSequence> constraintSequences, int index
+);
+
 
 }
 }
