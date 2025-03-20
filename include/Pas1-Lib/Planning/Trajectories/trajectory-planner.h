@@ -63,7 +63,7 @@ public:
 	TrajectoryPlanner &addConstraint_maxMotion(std::vector<double> maxMotion_dV_dT);
 	TrajectoryPlanner &addConstraint_maxAngularMotion(std::vector<double> maxAngularMotion);
 
-	PlanPoint _getNextPlanPoint(PlanPoint node, double distanceStep);
+	PlanPoint _getNextPlanPoint(PlanPoint originalNode, double distanceStep);
 	std::vector<PlanPoint> _forwardPass(double distanceStep);
 	std::vector<PlanPoint> _backwardPass(double distanceStep);
 	std::pair<ConstraintSequence, ConstraintSequence> constraintSequencesFromPlanPoints(

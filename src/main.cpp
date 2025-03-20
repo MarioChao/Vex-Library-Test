@@ -81,7 +81,7 @@ void runFollowSpline() {
 	file_vel << "time, velocity, right vel, left vel, maxV, minV\n";
 	file_accel << "time, accel\n";
 	file_curvature << "time, curvature, smoothed curvature\n";
-	for (int mt = 0; mt <= 1000 * motionProfile.getTotalTime() + 1; mt += 5) {
+	for (int mt = 0; mt <= 1000 * motionProfile.getTotalTime() + 1; mt += 10) {
 		double t = mt / 1000.0;
 		std::pair<double, std::vector<double>> motion = motionProfile.getMotionAtTime(t);
 		double distance = motion.first;

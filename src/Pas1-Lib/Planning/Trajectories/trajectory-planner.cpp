@@ -210,7 +210,7 @@ TrajectoryPlanner &TrajectoryPlanner::setCurvatureFunction(
 
 		// Increment distance
 		deltaX = distanceStep / (1 + fabs(avgK));
-		deltaX = aespa_lib::genutil::clamp(deltaX, distanceStep / 3.0, distanceStep);
+		deltaX = aespa_lib::genutil::clamp(deltaX, distanceStep / 5.0, distanceStep);
 		x += deltaX;
 	}
 
@@ -272,7 +272,10 @@ TrajectoryPlanner &TrajectoryPlanner::addConstraint_maxAngularMotion(std::vector
 	return *this;
 }
 
-PlanPoint TrajectoryPlanner::_getNextPlanPoint(PlanPoint node, double distanceStep) {
+PlanPoint TrajectoryPlanner::_getNextPlanPoint(PlanPoint originalNode, double distanceStep) {
+	// Copy node
+	PlanPoint node(originalNode);
+
 	// Get minimum constraints
 	double oldDistance = node.distance;
 	std::vector<Constraint> constraints0 = getConstraintsAtDistance(
@@ -327,8 +330,7 @@ PlanPoint TrajectoryPlanner::_getNextPlanPoint(PlanPoint node, double distanceSt
 	double time_seconds = node.time_seconds + timeStep_seconds;
 	PlanPoint newNode(time_seconds, newDistance, integral.second);
 
-
-	// Get minimuum constraints
+	// Get minimum constraints
 	std::vector<Constraint> constraints1 = getConstraintsAtDistance(
 		constraintSequences, newDistance
 	);
@@ -359,13 +361,54 @@ PlanPoint TrajectoryPlanner::_getNextPlanPoint(PlanPoint node, double distanceSt
 		double curvature = getCurvatureAtDistance(newNode.distance);
 		double factor = (1 + fabs(curvature) * trackWidth / 2);
 
-		// Constrain
+		// Scale to track & constrain
 		newNode.motion_dV_dT = aespa_lib::genutil::multiplyVector(newNode.motion_dV_dT, factor);
 		newNode.constrain(minConstraint1);
 		newNode.constrain(track_minConstraint1);
 		newNode.motion_dV_dT = aespa_lib::genutil::multiplyVector(newNode.motion_dV_dT, 1 / factor);
 	}
 	newNode.constrain(minConstraint1);
+
+	// Constrain left & right integral
+	if (trackWidth > 0 && !curvatureSequence.points.empty()) {
+		// Get curvature & track factors
+		double curvature0 = getCurvatureAtDistance(originalNode.distance);
+		double factor0_left = (1 - curvature0 * trackWidth / 2);
+		double factor0_right = (1 + curvature0 * trackWidth / 2);
+		double curvature1 = getCurvatureAtDistance(newNode.distance);
+		double factor1_left = (1 - curvature1 * trackWidth / 2);
+		double factor1_right = (1 + curvature1 * trackWidth / 2);
+
+		// Get track motion
+		std::vector<double> factor0s = {factor0_left, factor0_right};
+		std::vector<double> factor1s = {factor1_left, factor1_right};
+		for (int index = 0; index < (int) factor0s.size(); index++) {
+			double factor0 = factor0s[index];
+			double factor1 = factor1s[index];
+
+			// Scale to track
+			newNode.motion_dV_dT = aespa_lib::genutil::multiplyVector(newNode.motion_dV_dT, factor1);
+
+			// Constrain
+			PlanPoint trackNode(originalNode);
+			trackNode.motion_dV_dT = aespa_lib::genutil::multiplyVector(
+				originalNode.motion_dV_dT, factor0
+			);
+			trackNode.maximizeLastDegree(minConstraint0);
+	
+			// Integrate track motion
+			auto trackIntegral = aespa_lib::genutil::integratePolynomial(
+				trackNode.motion_dV_dT, timeStep_seconds
+			);
+			trackIntegral.second = {trackIntegral.second[0]};
+	
+			// Constrain track integral
+			newNode.constrain(Constraint(0, aespa_lib::genutil::getAbsolute(trackIntegral.second)));
+
+			// Scale back
+			newNode.motion_dV_dT = aespa_lib::genutil::multiplyVector(newNode.motion_dV_dT, 1 / factor1);
+		}
+	}
 
 	// printf("NEW: %.3f ", newDistance);
 	// for (double a : newNode.motion_dV_dT) {
@@ -396,7 +439,7 @@ std::vector<PlanPoint> TrajectoryPlanner::_forwardPass(double distanceStep) {
 		double previousX = lastNode.distance;
 		double previousK = curvatureSequence.getCurvatureAtDistance(previousX);
 		double deltaX = distanceStep / (1 + fabs(previousK));
-		deltaX = aespa_lib::genutil::clamp(deltaX, distanceStep / 3.0, distanceStep);
+		deltaX = aespa_lib::genutil::clamp(deltaX, distanceStep / 5.0, distanceStep);
 
 		// Get planning point
 		PlanPoint newNode = _getNextPlanPoint(lastNode, deltaX);
@@ -432,7 +475,7 @@ std::vector<PlanPoint> TrajectoryPlanner::_backwardPass(double distanceStep) {
 		double previousX = lastNode.distance;
 		double previousK = curvatureSequence.getCurvatureAtDistance(previousX);
 		double deltaX = distanceStep / (1 + fabs(previousK));
-		deltaX = aespa_lib::genutil::clamp(deltaX, distanceStep / 3.0, distanceStep);
+		deltaX = aespa_lib::genutil::clamp(deltaX, distanceStep / 5.0, distanceStep);
 
 		// Get planning point
 		PlanPoint newNode = _getNextPlanPoint(lastNode, -deltaX);
