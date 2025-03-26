@@ -1,6 +1,7 @@
-#include "Pas1-Lib/Planning/Trajectories/trajectory-planner.h"
-#include "Pas1-Lib/Planning/Splines/curve-sampler.h"
+#include "Pas1-Lib/Planning/Profiles/spline-profile.h"
 #include "Aespa-Lib/Winter-Utilities/general.h"
+#include "Aespa-Lib/Karina-Data-Structures/named-storage.h"
+
 #include <stdio.h>
 #include <fstream>
 #include <vector>
@@ -10,34 +11,29 @@ using namespace pas1_lib::planning::segments;
 using pas1_lib::planning::splines::SplineCurve;
 using pas1_lib::planning::splines::CurveSampler;
 using pas1_lib::planning::trajectories::TrajectoryPlanner;
+using pas1_lib::planning::profiles::SplineProfile;
 
 double maxVelocity = 3.628;
 double maxAccel = maxVelocity * 1.5;
 double trackWidth = 0.503937008;
 // double trackWidth = 0;
 
-std::vector<SplineCurve> splines;
-std::vector<CurveSampler> splineSamplers;
-std::vector<TrajectoryPlanner> splineTrajectoryPlans;
-std::vector<bool> willReverse;
+aespa_lib::datas::NamedStorage<SplineProfile> splineStorage;
 
 int pathIndex;
 
 void clearSplines();
-void pushNewSpline(pas1_lib::planning::splines::SplineCurve spline, bool reverse = false, double maxVel = maxVelocity);
-void runFollowSpline();
+void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse = false, double maxVel = maxVelocity);
+void runFollowSpline(std::string profileName);
 }
 
 namespace {
 void clearSplines() {
-	splines.clear();
-	splineSamplers.clear();
-	splineTrajectoryPlans.clear();
-	willReverse.clear();
+	splineStorage.clear();
 	pathIndex = 0;
 }
 
-void pushNewSpline(SplineCurve spline, bool reverse, double maxVel) {
+void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, double maxVel) {
 	CurveSampler curveSampler = CurveSampler(spline)
 		.calculateByResolution(spline.getTRange().second * 10);
 	TrajectoryPlanner splineTrajectoryPlan = TrajectoryPlanner(
@@ -50,26 +46,27 @@ void pushNewSpline(SplineCurve spline, bool reverse, double maxVel) {
 		// 	[&](double t) -> double { return spline.getCurvatureAt(t); }
 		// )
 		.setCurvatureFunction([&](double d) -> double {
-			return spline.getCurvatureAt(curveSampler.distanceToParam(d));
-		})
+		return spline.getCurvatureAt(curveSampler.distanceToParam(d));
+	})
 		// .smoothenCurvature()
-		// .addCenterConstraint_maxMotion({ maxVel, maxAccel })
-		.addCenterConstraint_maxMotion({ maxVel, maxAccel, maxAccel * 2 })
+		.addCenterConstraint_maxMotion({ maxVel, maxAccel })
 		.addTrackConstraint_maxMotion({ maxVel, maxAccel })
-		// .addCenterConstraint_maxMotion({maxVel, maxAccel, maxAccel * 0.5})
+		// .addCenterConstraint_maxMotion({ maxVel, maxAccel, maxAccel * 5 })
 		.calculateMotionProfile();
-	splines.push_back(spline);
-	splineSamplers.push_back(curveSampler);
-	splineTrajectoryPlans.push_back(splineTrajectoryPlan);
-	willReverse.push_back(reverse);
+	splineStorage.store(profileName, SplineProfile({ spline, curveSampler, splineTrajectoryPlan, reverse }));
+	// splines.push_back(spline);
+	// splineSamplers.push_back(curveSampler);
+	// splineTrajectoryPlans.push_back(splineTrajectoryPlan);
+	// willReverse.push_back(reverse);
 }
 
-void runFollowSpline() {
-	aespa_lib::datas::Linegular lg = splines[pathIndex].getLinegularAt(0, willReverse[pathIndex]);
-	SplineCurve spline = splines[pathIndex];
-	CurveSampler curveSampler = splineSamplers[pathIndex];
-	TrajectoryPlanner &motionProfile = splineTrajectoryPlans[pathIndex];
-	bool isReversed = willReverse[pathIndex];
+void runFollowSpline(std::string profileName) {
+	SplineProfile *profile = splineStorage.getStored(profileName).get();
+	SplineCurve spline = profile->spline;
+	CurveSampler curveSampler = profile->curveSampler;
+	TrajectoryPlanner &motionProfile = profile->trajectoryPlan;
+	bool isReversed = profile->willReverse;
+	aespa_lib::datas::Linegular lg = spline.getLinegularAt(0, isReversed);
 
 	std::string filePrefix = std::string("dev-files/") + "path" + std::to_string(pathIndex);
 	std::ofstream file_dis;
@@ -132,20 +129,29 @@ void runFollowSpline() {
 
 void testTrajectory() {
 	clearSplines();
-	pushNewSpline(SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
+	pushNewSpline(
+		"high curve",
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
 		{{1.59, -0.42}, {1.52, 0.33}, {1.49, 0.81}, {0.48, 1}, {1.55, 1.02}, {2.51, 1}, {1.57, 1.28}, {1.53, 1.81}, {1.53, 2.79}}
-		}));
-	pushNewSpline(SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
+			})
+	);
+	pushNewSpline(
+		"love shape",
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
 		{2.62, 0.09}, {1.52, 0.49}, {0.67, 1.35}, {1.03, 1.97}, {1.54, 1.8},
 		{2.06, 1.95}, {2.49, 1.34}, {1.54, 0.48}, {0.48, 0.05},
-		}));
-	pushNewSpline(SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
+			})
+			);
+	pushNewSpline(
+		"m shape",
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
 		{2.15, -0.38}, {0.98, 1}, {0.98, 5.02}, {3.02, 1}, {5.02, 5},
 		{5.04, 1.02}, {3.95, -0.38}
-		}));
-	runFollowSpline();
-	runFollowSpline();
-	runFollowSpline();
+			})
+	);
+	runFollowSpline("high curve");
+	runFollowSpline("love shape");
+	runFollowSpline("m shape");
 }
 
 void testIntegral() {
