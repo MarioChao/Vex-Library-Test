@@ -12,8 +12,9 @@ using pas1_lib::planning::splines::CurveSampler;
 using pas1_lib::planning::trajectories::TrajectoryPlanner;
 
 double maxVelocity = 3.628;
-double maxAccel = maxVelocity * 0.9;
+double maxAccel = maxVelocity * 1.5;
 double trackWidth = 0.503937008;
+// double trackWidth = 0;
 
 std::vector<SplineCurve> splines;
 std::vector<CurveSampler> splineSamplers;
@@ -52,8 +53,10 @@ void pushNewSpline(SplineCurve spline, bool reverse, double maxVel) {
 			return spline.getCurvatureAt(curveSampler.distanceToParam(d));
 		})
 		// .smoothenCurvature()
-		.addConstraint_maxMotion({ maxVel, maxAccel })
-		// .addConstraint_maxMotion({maxVel, maxAccel, maxAccel * 0.5})
+		// .addCenterConstraint_maxMotion({ maxVel, maxAccel })
+		.addCenterConstraint_maxMotion({ maxVel, maxAccel, maxAccel * 2 })
+		.addTrackConstraint_maxMotion({ maxVel, maxAccel })
+		// .addCenterConstraint_maxMotion({maxVel, maxAccel, maxAccel * 0.5})
 		.calculateMotionProfile();
 	splines.push_back(spline);
 	splineSamplers.push_back(curveSampler);
@@ -78,10 +81,11 @@ void runFollowSpline() {
 	file_accel.open(filePrefix + "-accel.csv");
 	file_curvature.open(filePrefix + "-k.csv");
 	file_dis << "time, distance\n";
-	file_vel << "time, velocity, right vel, left vel, maxV, minV\n";
-	file_accel << "time, accel\n";
+	file_vel << "time, maxV, minV, velocity, right vel, left vel\n";
+	file_accel << "time, maxA, minA, accel, right accel, left accel\n";
 	file_curvature << "time, curvature, smoothed curvature\n";
-	for (int mt = 0; mt <= 1000 * motionProfile.getTotalTime() + 1; mt += 10) {
+	double prevLeftVelocity = 0, prevRightVelocity = 0, prevT;
+	for (int mt = -100; mt <= 1000 * motionProfile.getTotalTime() + 101; mt += 10) {
 		double t = mt / 1000.0;
 		std::pair<double, std::vector<double>> motion = motionProfile.getMotionAtTime(t);
 		double distance = motion.first;
@@ -89,19 +93,27 @@ void runFollowSpline() {
 		double velocity = motion.second[0];
 		double acceleration = (degree >= 2) ? motion.second[1] : 0;
 		double curvature = motionProfile.getCurvatureAtDistance(distance);
-		double angularVelocity_radPerSec = curvature * trackWidth / 2;
-		double leftVelocity = velocity * (1 - angularVelocity_radPerSec);
-		double rightVelocity = velocity * (1 + angularVelocity_radPerSec);
+		double factor = curvature * trackWidth / 2;
+		double leftVelocity = velocity * (1 - factor);
+		double rightVelocity = velocity * (1 + factor);
+		// double leftAccel = acceleration * (1 - factor);
+		// double rightAccel = acceleration * (1 + factor);
+		double leftAccel = (leftVelocity - prevLeftVelocity) / (t - prevT);
+		double rightAccel = (rightVelocity - prevRightVelocity) / (t - prevT);
+		prevT = t;
+		prevLeftVelocity = leftVelocity;
+		prevRightVelocity = rightVelocity;
 
 		file_dis << t;
 		file_dis << ", " << distance;
 		file_dis << '\n';
 		file_vel << t;
-		file_vel << ", " << velocity << ", " << rightVelocity << ", " << leftVelocity;
 		file_vel << ", " << maxVelocity << ", " << -maxVelocity;
+		file_vel << ", " << velocity << ", " << rightVelocity << ", " << leftVelocity;
 		file_vel << '\n';
 		file_accel << t;
-		file_accel << ", " << acceleration;
+		file_accel << ", " << maxAccel << ", " << -maxAccel;
+		file_accel << ", " << acceleration << ", " << rightAccel << ", " << leftAccel;
 		file_accel << '\n';
 		file_curvature << t;
 		file_curvature << ", " << spline.getCurvatureAt(curveSampler.distanceToParam(distance));

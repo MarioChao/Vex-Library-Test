@@ -20,6 +20,10 @@ struct PlanPoint {
 
 	PlanPoint &constrain(Constraint constraint);
 	PlanPoint &maximizeLastDegree(Constraint constraint);
+	PlanPoint &maximizeNthDegree(
+		Constraint constraint, int dV_dT_degree,
+		Constraint target_rawConstraint, bool maximizeLowerDegrees = false
+	);
 
 
 	double time_seconds;
@@ -28,6 +32,7 @@ struct PlanPoint {
 };
 
 double getTimeStepFromDistanceStep(PlanPoint node, double distanceStep);
+ConstraintSequence planPoints_to_rawConstraintSequence(std::vector<PlanPoint> nodes);
 
 
 // ---------- Trajectory Planner ----------
@@ -57,15 +62,20 @@ public:
 	TrajectoryPlanner &smoothenCurvature(double alpha = 0.7);
 	double getCurvatureAtDistance(double distance);
 
-	TrajectoryPlanner &addConstraintSequence(ConstraintSequence constraints);
+	TrajectoryPlanner &addCenterConstraintSequence(ConstraintSequence constraints);
+	TrajectoryPlanner &addTrackConstraintSequence(ConstraintSequence constraints);
 
-	/// @param maxMotion_dV_dT Recommend only up to 3 degrees (jerk/jolt), and not too small.
-	TrajectoryPlanner &addConstraint_maxMotion(std::vector<double> maxMotion_dV_dT);
-	TrajectoryPlanner &addConstraint_maxAngularMotion(std::vector<double> maxAngularMotion);
+	TrajectoryPlanner &addCenterConstraint_maxMotion(std::vector<double> maxMotion_dV_dT);
 
-	PlanPoint _getNextPlanPoint(PlanPoint originalNode, double distanceStep);
-	std::vector<PlanPoint> _forwardPass(double distanceStep);
-	std::vector<PlanPoint> _backwardPass(double distanceStep);
+	TrajectoryPlanner &addTrackConstraint_maxMotion(std::vector<double> maxMotion_dV_dT);
+
+	PlanPoint _getNextPlanPoint(
+		PlanPoint originalNode,
+		double distanceStep,
+		int dV_dT_degree
+	);
+	std::vector<PlanPoint> _forwardPass(int dV_dT_degree);
+	std::vector<PlanPoint> _backwardPass(int dV_dT_degree);
 	std::pair<ConstraintSequence, ConstraintSequence> constraintSequencesFromPlanPoints(
 		std::vector<PlanPoint> nodes
 	);
@@ -86,13 +96,14 @@ private:
 
 	std::vector<double> startMotion;
 	std::vector<double> endMotion;
-	
+
 	CurvatureSequence curvatureSequence;
-	
-	std::vector<ConstraintSequence> constraintSequences;
+
 	std::vector<ConstraintSequence> center_constraintSequences;
 	std::vector<ConstraintSequence> track_constraintSequences;
 
+	std::vector<double> planPoint_distances;
+	ConstraintSequence planPoint_rawSequence;
 	std::vector<PlanPoint> profilePoints;
 };
 
