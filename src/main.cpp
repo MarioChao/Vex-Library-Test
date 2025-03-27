@@ -38,6 +38,7 @@ void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, do
 		.calculateByResolution(spline.getTRange().second * 10);
 	TrajectoryPlanner splineTrajectoryPlan = TrajectoryPlanner(
 		curveSampler.getDistanceRange().second, trackWidth,
+		// 40 + (int) (curveSampler.getDistanceRange().second * 4)
 		64
 	)
 		// .setCurvatureFunction(
@@ -53,7 +54,7 @@ void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, do
 		.addTrackConstraint_maxMotion({ maxVel, maxAccel })
 		// .addCenterConstraint_maxMotion({ maxVel, maxAccel, maxAccel * 5 })
 		.calculateMotionProfile();
-	splineStorage.store(profileName, SplineProfile({ spline, curveSampler, splineTrajectoryPlan, reverse }));
+	splineStorage.store(profileName, SplineProfile(spline, curveSampler, splineTrajectoryPlan, reverse));
 	// splines.push_back(spline);
 	// splineSamplers.push_back(curveSampler);
 	// splineTrajectoryPlans.push_back(splineTrajectoryPlan);
@@ -82,15 +83,16 @@ void runFollowSpline(std::string profileName) {
 	file_accel << "time, maxA, minA, accel, right accel, left accel\n";
 	file_curvature << "time, curvature, smoothed curvature\n";
 	double prevLeftVelocity = 0, prevRightVelocity = 0, prevT;
-	for (int mt = -100; mt <= 1000 * motionProfile.getTotalTime() + 101; mt += 10) {
+	for (int mt = -100; mt <= 1000 * motionProfile.getTotalTime() + 101; mt += 5) {
 		double t = mt / 1000.0;
 		std::pair<double, std::vector<double>> motion = motionProfile.getMotionAtTime(t);
 		double distance = motion.first;
 		int degree = motion.second.size();
 		double velocity = motion.second[0];
 		double acceleration = (degree >= 2) ? motion.second[1] : 0;
-		double curvature = motionProfile.getCurvatureAtDistance(distance);
-		double factor = curvature * trackWidth / 2;
+		double curvature = spline.getCurvatureAt(curveSampler.distanceToParam(distance));
+		double profile_curvature = motionProfile.getCurvatureAtDistance(distance);
+		double factor = profile_curvature * trackWidth / 2;
 		double leftVelocity = velocity * (1 - factor);
 		double rightVelocity = velocity * (1 + factor);
 		// double leftAccel = acceleration * (1 - factor);
@@ -113,8 +115,8 @@ void runFollowSpline(std::string profileName) {
 		file_accel << ", " << acceleration << ", " << rightAccel << ", " << leftAccel;
 		file_accel << '\n';
 		file_curvature << t;
-		file_curvature << ", " << spline.getCurvatureAt(curveSampler.distanceToParam(distance));
 		file_curvature << ", " << curvature;
+		file_curvature << ", " << profile_curvature;
 		file_curvature << '\n';
 	}
 	file_dis.close();
@@ -129,12 +131,10 @@ void runFollowSpline(std::string profileName) {
 
 void testTrajectory() {
 	clearSplines();
-	pushNewSpline(
-		"high curve",
+	pushNewSpline("big curvature 1",
 		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
-		{{1.59, -0.42}, {1.52, 0.33}, {1.49, 0.81}, {0.48, 1}, {1.55, 1.02}, {2.51, 1}, {1.57, 1.28}, {1.53, 1.81}, {1.53, 2.79}}
-			})
-	);
+		{{1.59, -0.42}, {1.52, 0.5}, {1.49, 0.81}, {0.48, 1}, {1.55, 1.02}, {2.51, 1}, {1.57, 1.28}, {1.53, 1.81}, {1.53, 2.79}}
+			}));
 	pushNewSpline(
 		"love shape",
 		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
@@ -149,7 +149,18 @@ void testTrajectory() {
 		{5.04, 1.02}, {3.95, -0.38}
 			})
 	);
-	runFollowSpline("high curve");
+	pushNewSpline(
+		"field tour",
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
+		{-0.02, -0.07}, {1.36, 0.64}, {2.4, 1.55}, {0.97, 2.99}, {0.42, 4.03},
+		{0.74, 5.28}, {2, 5.54}, {2.01, 3.98}, {3.02, 3}, {4.03, 4.02},
+		{3.02, 4.85}, {3.02, 5.51}, {4.39, 5.49}, {4.67, 4.2}, {5.55, 3.07},
+		{4.65, 1.77}, {5.49, 0.98}, {4.31, 0.42}, {4.02, 1.33}, {3.15, 1.37},
+		{3, 0.48}, {3.02, -0.22},
+			})
+			);
+	runFollowSpline("field tour");
+	runFollowSpline("big curvature 1");
 	runFollowSpline("love shape");
 	runFollowSpline("m shape");
 }
