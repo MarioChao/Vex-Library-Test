@@ -10,6 +10,7 @@ namespace {
 using namespace pas1_lib::planning::segments;
 using pas1_lib::planning::splines::SplineCurve;
 using pas1_lib::planning::splines::CurveSampler;
+using pas1_lib::planning::trajectories::ConstraintSequence;
 using pas1_lib::planning::trajectories::TrajectoryPlanner;
 using pas1_lib::planning::profiles::SplineProfile;
 
@@ -53,7 +54,7 @@ void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, do
 		.setCurvatureFunction([&](double d) -> double {
 		return spline.getCurvatureAt(curveSampler.distanceToParam(d));
 	})
-		// .smoothenCurvature()
+		.maxSmoothCurvature()
 		.addCenterConstraint_maxMotion({ maxVel, maxAccel })
 		.addTrackConstraint_maxMotion({ maxVel, maxAccel })
 		// .addCenterConstraint_maxMotion({ maxVel, maxAccel, maxAccel * 5 })
@@ -167,11 +168,90 @@ void testTrajectory() {
 		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
 			{{2.54, 0.49}, {1.54, 0.47}, {0.47, 0.94}, {1.32, 1.59}, {1.54, 0.47}, {1.5, -0.46}}
 			}));
+	runFollowSpline("test");
 	runFollowSpline("field tour");
 	runFollowSpline("big curvature 1");
-	runFollowSpline("love shape");
+	// runFollowSpline("love shape");
 	// runFollowSpline("m shape");
-	// runFollowSpline("test");
+}
+
+void runDriveTrajectory(double distance_tiles, std::vector<std::pair<double, double>> velocityConstraint_tiles_pct) {
+	TrajectoryPlanner motionProfile(distance_tiles, trackWidth, 64);
+	ConstraintSequence constraintSequence;
+	for (int i = 0; i < (int) velocityConstraint_tiles_pct.size(); i++) {
+		auto constraint = velocityConstraint_tiles_pct[i];
+		constraintSequence.addConstraints({
+			{
+				constraint.first,
+				{
+					aespa_lib::genutil::clamp(constraint.second, 1, 100) / 100.0 * maxVelocity
+				}
+			}
+		});
+	}
+	motionProfile.addCenterConstraintSequence(constraintSequence);
+	motionProfile.addCenterConstraint_maxMotion({ maxVelocity, maxAccel });
+	motionProfile.addTrackConstraint_maxMotion({ maxVelocity, maxAccel });
+	motionProfile.calculateMotionProfile();
+
+	std::string filePrefix = std::string("dev-files/") + "path" + std::to_string(pathIndex);
+	std::ofstream file_dis;
+	std::ofstream file_vel;
+	std::ofstream file_accel;
+	std::ofstream file_curvature;
+	file_dis.open(filePrefix + "-dis.csv");
+	file_vel.open(filePrefix + "-vel.csv");
+	file_accel.open(filePrefix + "-accel.csv");
+	file_curvature.open(filePrefix + "-k.csv");
+	file_dis << "time, distance\n";
+	file_vel << "time, maxV, minV, velocity, right vel, left vel\n";
+	file_accel << "time, maxA, minA, accel, right accel, left accel\n";
+	file_curvature << "time, curvature, smoothed curvature\n";
+	double prevLeftVelocity = 0, prevRightVelocity = 0, prevT;
+	for (int mt = -100; mt <= 1000 * motionProfile.getTotalTime() + 101; mt += 5) {
+		double t = mt / 1000.0;
+		std::pair<double, std::vector<double>> motion = motionProfile.getMotionAtTime(t);
+		double distance = motion.first;
+		int degree = motion.second.size();
+		double velocity = motion.second[0];
+		double acceleration = (degree >= 2) ? motion.second[1] : 0;
+		double profile_curvature = motionProfile.getCurvatureAtDistance(distance);
+		double curvature = profile_curvature;
+		double factor = curvature * trackWidth / 2;
+		double leftVelocity = velocity * (1 - factor);
+		double rightVelocity = velocity * (1 + factor);
+		// double leftAccel = acceleration * (1 - factor);
+		// double rightAccel = acceleration * (1 + factor);
+		double leftAccel = (leftVelocity - prevLeftVelocity) / (t - prevT);
+		double rightAccel = (rightVelocity - prevRightVelocity) / (t - prevT);
+		prevT = t;
+		prevLeftVelocity = leftVelocity;
+		prevRightVelocity = rightVelocity;
+
+		file_dis << t;
+		file_dis << ", " << distance;
+		file_dis << '\n';
+		file_vel << t;
+		file_vel << ", " << maxVelocity << ", " << -maxVelocity;
+		file_vel << ", " << velocity << ", " << rightVelocity << ", " << leftVelocity;
+		file_vel << '\n';
+		file_accel << t;
+		file_accel << ", " << maxAccel << ", " << -maxAccel;
+		file_accel << ", " << acceleration << ", " << rightAccel << ", " << leftAccel;
+		file_accel << '\n';
+		file_curvature << t;
+		file_curvature << ", " << curvature;
+		file_curvature << ", " << profile_curvature;
+		file_curvature << '\n';
+	}
+	file_dis.close();
+	file_vel.close();
+	file_accel.close();
+	file_curvature.close();
+}
+
+void test1DTrajectory() {
+	runDriveTrajectory(1, {{0, 75}});
 }
 
 void testIntegral() {
@@ -187,5 +267,6 @@ void testIntegral() {
 
 int main() {
 	testTrajectory();
+	// test1DTrajectory();
 	// testIntegral();
 }
