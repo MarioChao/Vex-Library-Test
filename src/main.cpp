@@ -21,17 +21,100 @@ double trackWidth = 0.503937008;
 
 aespa_lib::datas::NamedStorage<SplineProfile> splineStorage;
 
-int pathIndex;
+int pathIndex = 0;
+
+void saveTrajectoryGraph(TrajectoryPlanner *motionProfile, SplineProfile *splineProfile);
 
 void clearSplines();
 void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse = false, double maxVel = maxVelocity);
 void runFollowSpline(std::string profileName);
+
+void runDriveTrajectory(double distance_tiles, std::vector<std::pair<double, double>> velocityConstraint_tiles_pct);
 }
 
 namespace {
+void saveTrajectoryGraph(TrajectoryPlanner *motionProfile, SplineProfile *splineProfile) {
+	if (splineProfile) {
+		motionProfile = &splineProfile->trajectoryPlan;
+	}
+
+	std::string filePrefix = std::string("dev-files/") + "path" + std::to_string(pathIndex);
+	std::ofstream file_dis;
+	std::ofstream file_vel;
+	std::ofstream file_ang_vel;
+	std::ofstream file_accel;
+	std::ofstream file_curvature;
+	file_dis.open(filePrefix + "-dis.csv");
+	file_vel.open(filePrefix + "-vel.csv");
+	file_ang_vel.open(filePrefix + "-ang_vel.csv");
+	file_accel.open(filePrefix + "-accel.csv");
+	file_curvature.open(filePrefix + "-k.csv");
+	file_dis << "time, distance\n";
+	file_vel << "time, maxV, minV, right vel, left vel, velocity\n";
+	file_ang_vel << "time, ang vel\n";
+	file_accel << "time, maxA, minA, right accel, left accel, accel\n";
+	file_curvature << "time, curvature, smoothed curvature, factorR, factorL, zero\n";
+
+	double prevLeftVelocity = 0, prevRightVelocity = 0, prevT;
+	for (int mt = -100; mt <= 1000 * motionProfile->getTotalTime() + 101; mt += 5) {
+		double t = mt / 1000.0;
+		std::pair<double, std::vector<double>> motion = motionProfile->getMotionAtTime(t);
+		double distance = motion.first;
+		int degree = motion.second.size();
+		double velocity = motion.second[0];
+		double acceleration = (degree >= 2) ? motion.second[1] : 0;
+		double profile_curvature = motionProfile->getCurvatureAtDistance(distance);
+		double curvature = [&]() -> double {
+			if (splineProfile) {
+				double t = splineProfile->curveSampler.distanceToParam(distance);
+				return splineProfile->spline.getCurvatureAt(t);
+			}
+			return profile_curvature;
+		}();
+		double factor = profile_curvature * trackWidth / 2;
+		double leftVelocity = velocity * (1 - factor);
+		double rightVelocity = velocity * (1 + factor);
+		// double leftAccel = acceleration * (1 - factor);
+		// double rightAccel = acceleration * (1 + factor);
+		double leftAccel = (leftVelocity - prevLeftVelocity) / (t - prevT);
+		double rightAccel = (rightVelocity - prevRightVelocity) / (t - prevT);
+		prevT = t;
+		prevLeftVelocity = leftVelocity;
+		prevRightVelocity = rightVelocity;
+
+		file_dis << t;
+		file_dis << ", " << distance;
+		file_dis << '\n';
+		file_vel << t;
+		file_vel << ", " << maxVelocity << ", " << -maxVelocity;
+		file_vel << ", " << rightVelocity << ", " << leftVelocity;
+		file_vel << ", " << velocity;
+		file_vel << '\n';
+		file_ang_vel << t;
+		file_ang_vel << ", " << velocity * profile_curvature;
+		file_ang_vel << "\n";
+		file_accel << t;
+		file_accel << ", " << maxAccel << ", " << -maxAccel;
+		file_accel << ", " << rightAccel << ", " << leftAccel;
+		file_accel << ", " << acceleration;
+		file_accel << '\n';
+		file_curvature << t;
+		file_curvature << ", " << curvature;
+		file_curvature << ", " << profile_curvature;
+		file_curvature << ", " << (1 + factor) << ", " << (1 - factor);
+		file_curvature << ", " << 0;
+		file_curvature << '\n';
+	}
+	file_dis.close();
+	file_vel.close();
+	file_accel.close();
+	file_curvature.close();
+
+	pathIndex++;
+}
+
 void clearSplines() {
 	splineStorage.clear();
-	pathIndex = 0;
 }
 
 void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, double maxVel) {
@@ -74,62 +157,29 @@ void runFollowSpline(std::string profileName) {
 	bool isReversed = profile->willReverse;
 	aespa_lib::datas::Linegular lg = spline.getLinegularAt(0, isReversed);
 
-	std::string filePrefix = std::string("dev-files/") + "path" + std::to_string(pathIndex);
-	std::ofstream file_dis;
-	std::ofstream file_vel;
-	std::ofstream file_accel;
-	std::ofstream file_curvature;
-	file_dis.open(filePrefix + "-dis.csv");
-	file_vel.open(filePrefix + "-vel.csv");
-	file_accel.open(filePrefix + "-accel.csv");
-	file_curvature.open(filePrefix + "-k.csv");
-	file_dis << "time, distance\n";
-	file_vel << "time, maxV, minV, velocity, right vel, left vel\n";
-	file_accel << "time, maxA, minA, accel, right accel, left accel\n";
-	file_curvature << "time, curvature, smoothed curvature\n";
-	double prevLeftVelocity = 0, prevRightVelocity = 0, prevT;
-	for (int mt = -100; mt <= 1000 * motionProfile.getTotalTime() + 101; mt += 5) {
-		double t = mt / 1000.0;
-		std::pair<double, std::vector<double>> motion = motionProfile.getMotionAtTime(t);
-		double distance = motion.first;
-		int degree = motion.second.size();
-		double velocity = motion.second[0];
-		double acceleration = (degree >= 2) ? motion.second[1] : 0;
-		double curvature = spline.getCurvatureAt(curveSampler.distanceToParam(distance));
-		double profile_curvature = motionProfile.getCurvatureAtDistance(distance);
-		double factor = profile_curvature * trackWidth / 2;
-		double leftVelocity = velocity * (1 - factor);
-		double rightVelocity = velocity * (1 + factor);
-		// double leftAccel = acceleration * (1 - factor);
-		// double rightAccel = acceleration * (1 + factor);
-		double leftAccel = (leftVelocity - prevLeftVelocity) / (t - prevT);
-		double rightAccel = (rightVelocity - prevRightVelocity) / (t - prevT);
-		prevT = t;
-		prevLeftVelocity = leftVelocity;
-		prevRightVelocity = rightVelocity;
+	saveTrajectoryGraph(&motionProfile, profile);
+}
 
-		file_dis << t;
-		file_dis << ", " << distance;
-		file_dis << '\n';
-		file_vel << t;
-		file_vel << ", " << maxVelocity << ", " << -maxVelocity;
-		file_vel << ", " << velocity << ", " << rightVelocity << ", " << leftVelocity;
-		file_vel << '\n';
-		file_accel << t;
-		file_accel << ", " << maxAccel << ", " << -maxAccel;
-		file_accel << ", " << acceleration << ", " << rightAccel << ", " << leftAccel;
-		file_accel << '\n';
-		file_curvature << t;
-		file_curvature << ", " << curvature;
-		file_curvature << ", " << profile_curvature;
-		file_curvature << '\n';
+void runDriveTrajectory(double distance_tiles, std::vector<std::pair<double, double>> velocityConstraint_tiles_pct) {
+	TrajectoryPlanner motionProfile(distance_tiles, trackWidth, 64);
+	ConstraintSequence constraintSequence;
+	for (int i = 0; i < (int) velocityConstraint_tiles_pct.size(); i++) {
+		auto constraint = velocityConstraint_tiles_pct[i];
+		constraintSequence.addConstraints({
+			{
+				constraint.first,
+				{
+					aespa_lib::genutil::clamp(constraint.second, 1, 100) / 100.0 * maxVelocity
+				}
+			}
+		});
 	}
-	file_dis.close();
-	file_vel.close();
-	file_accel.close();
-	file_curvature.close();
+	motionProfile.addCenterConstraintSequence(constraintSequence);
+	motionProfile.addCenterConstraint_maxMotion({ maxVelocity, maxAccel });
+	motionProfile.addTrackConstraint_maxMotion({ maxVelocity, maxAccel });
+	motionProfile.calculateMotionProfile();
 
-	pathIndex++;
+	saveTrajectoryGraph(&motionProfile, nullptr);
 }
 }
 
@@ -169,89 +219,14 @@ void testTrajectory() {
 			{{2.54, 0.49}, {1.54, 0.47}, {0.47, 0.94}, {1.32, 1.59}, {1.54, 0.47}, {1.5, -0.46}}
 			}));
 	runFollowSpline("test");
-	runFollowSpline("field tour");
 	runFollowSpline("big curvature 1");
 	// runFollowSpline("love shape");
+	runFollowSpline("field tour");
 	// runFollowSpline("m shape");
 }
 
-void runDriveTrajectory(double distance_tiles, std::vector<std::pair<double, double>> velocityConstraint_tiles_pct) {
-	TrajectoryPlanner motionProfile(distance_tiles, trackWidth, 64);
-	ConstraintSequence constraintSequence;
-	for (int i = 0; i < (int) velocityConstraint_tiles_pct.size(); i++) {
-		auto constraint = velocityConstraint_tiles_pct[i];
-		constraintSequence.addConstraints({
-			{
-				constraint.first,
-				{
-					aespa_lib::genutil::clamp(constraint.second, 1, 100) / 100.0 * maxVelocity
-				}
-			}
-		});
-	}
-	motionProfile.addCenterConstraintSequence(constraintSequence);
-	motionProfile.addCenterConstraint_maxMotion({ maxVelocity, maxAccel });
-	motionProfile.addTrackConstraint_maxMotion({ maxVelocity, maxAccel });
-	motionProfile.calculateMotionProfile();
-
-	std::string filePrefix = std::string("dev-files/") + "path" + std::to_string(pathIndex);
-	std::ofstream file_dis;
-	std::ofstream file_vel;
-	std::ofstream file_accel;
-	std::ofstream file_curvature;
-	file_dis.open(filePrefix + "-dis.csv");
-	file_vel.open(filePrefix + "-vel.csv");
-	file_accel.open(filePrefix + "-accel.csv");
-	file_curvature.open(filePrefix + "-k.csv");
-	file_dis << "time, distance\n";
-	file_vel << "time, maxV, minV, velocity, right vel, left vel\n";
-	file_accel << "time, maxA, minA, accel, right accel, left accel\n";
-	file_curvature << "time, curvature, smoothed curvature\n";
-	double prevLeftVelocity = 0, prevRightVelocity = 0, prevT;
-	for (int mt = -100; mt <= 1000 * motionProfile.getTotalTime() + 101; mt += 5) {
-		double t = mt / 1000.0;
-		std::pair<double, std::vector<double>> motion = motionProfile.getMotionAtTime(t);
-		double distance = motion.first;
-		int degree = motion.second.size();
-		double velocity = motion.second[0];
-		double acceleration = (degree >= 2) ? motion.second[1] : 0;
-		double profile_curvature = motionProfile.getCurvatureAtDistance(distance);
-		double curvature = profile_curvature;
-		double factor = curvature * trackWidth / 2;
-		double leftVelocity = velocity * (1 - factor);
-		double rightVelocity = velocity * (1 + factor);
-		// double leftAccel = acceleration * (1 - factor);
-		// double rightAccel = acceleration * (1 + factor);
-		double leftAccel = (leftVelocity - prevLeftVelocity) / (t - prevT);
-		double rightAccel = (rightVelocity - prevRightVelocity) / (t - prevT);
-		prevT = t;
-		prevLeftVelocity = leftVelocity;
-		prevRightVelocity = rightVelocity;
-
-		file_dis << t;
-		file_dis << ", " << distance;
-		file_dis << '\n';
-		file_vel << t;
-		file_vel << ", " << maxVelocity << ", " << -maxVelocity;
-		file_vel << ", " << velocity << ", " << rightVelocity << ", " << leftVelocity;
-		file_vel << '\n';
-		file_accel << t;
-		file_accel << ", " << maxAccel << ", " << -maxAccel;
-		file_accel << ", " << acceleration << ", " << rightAccel << ", " << leftAccel;
-		file_accel << '\n';
-		file_curvature << t;
-		file_curvature << ", " << curvature;
-		file_curvature << ", " << profile_curvature;
-		file_curvature << '\n';
-	}
-	file_dis.close();
-	file_vel.close();
-	file_accel.close();
-	file_curvature.close();
-}
-
 void test1DTrajectory() {
-	runDriveTrajectory(1, {{0, 75}});
+	runDriveTrajectory(1, { {0, 75} });
 }
 
 void testIntegral() {
