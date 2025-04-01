@@ -1,5 +1,6 @@
 #include "Pas1-Lib/Planning/Profiles/spline-profile.h"
 #include "Aespa-Lib/Winter-Utilities/general.h"
+#include "Aespa-Lib/Winter-Utilities/units.h"
 #include "Aespa-Lib/Karina-Data-Structures/named-storage.h"
 
 #include <stdio.h>
@@ -7,6 +8,7 @@
 #include <vector>
 
 namespace {
+using namespace aespa_lib::units::literals;
 using namespace pas1_lib::planning::segments;
 using pas1_lib::planning::splines::SplineCurve;
 using pas1_lib::planning::splines::CurveSampler;
@@ -220,7 +222,7 @@ void testTrajectory() {
 			}));
 	runFollowSpline("test");
 	runFollowSpline("big curvature 1");
-	// runFollowSpline("love shape");
+	runFollowSpline("love shape");
 	runFollowSpline("field tour");
 	// runFollowSpline("m shape");
 }
@@ -241,6 +243,7 @@ void testIntegral() {
 }
 
 int main() {
+	// printf("%.10f\n", (-2000.0_in).m());
 	testTrajectory();
 	// test1DTrajectory();
 	// testIntegral();
