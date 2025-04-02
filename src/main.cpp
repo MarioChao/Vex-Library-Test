@@ -246,6 +246,7 @@ void testIntegral() {
 
 int main() {
 	// printf("%.10f\n", (-2000.0_in).m());
+	// printf("%.10f\n", (180_fieldDeg).fieldRad());
 	testTrajectory();
 	// test1DTrajectory();
 	// testIntegral();
