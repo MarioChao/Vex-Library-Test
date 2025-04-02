@@ -38,11 +38,11 @@ double Vector2D::getMagnitude() {
 
 // ---------- Linegular ----------
 
-Linegular::Linegular(Vector2D position, aespa_lib::units::PolarAngle rotation)
+Linegular::Linegular(Vector2D position, units::PolarAngle rotation)
 	: position(position),
 	rotation(rotation) {}
 
-Linegular::Linegular(double x, double y, aespa_lib::units::PolarAngle rotation)
+Linegular::Linegular(double x, double y, units::PolarAngle rotation)
 	: Linegular(Vector2D(x, y), rotation) {}
 
 Vector2D Linegular::getPosition() {
@@ -57,7 +57,7 @@ double Linegular::getY() {
 	return position.y;
 }
 
-aespa_lib::units::PolarAngle Linegular::getAngle() {
+units::PolarAngle Linegular::getAngle() {
 	return rotation;
 }
 
@@ -71,6 +71,10 @@ void Linegular::setPosition(Vector2D newPosition) {
 
 void Linegular::setPosition(double x, double y) {
 	setPosition(Vector2D(x, y));
+}
+
+void Linegular::setRotation(units::PolarAngle newRotation) {
+	rotation = newRotation;
 }
 
 void Linegular::rotateXYBy(units::PolarAngle rotation) {

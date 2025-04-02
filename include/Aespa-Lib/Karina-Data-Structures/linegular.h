@@ -20,7 +20,7 @@ struct Vector2D {
 // Class containing 2D position & rotation data
 class Linegular {
 public:
-	Linegular(Vector2D position, aespa_lib::units::PolarAngle rotation);
+	Linegular(Vector2D position, units::PolarAngle rotation);
 
 	/**
 	 * @brief Construct a new Linegular object.
@@ -29,17 +29,18 @@ public:
 	 * @param y The forward-backward position on the plane.
 	 * @param rotation The heading angle.
 	 */
-	Linegular(double x, double y, aespa_lib::units::PolarAngle rotation);
+	Linegular(double x, double y, units::PolarAngle rotation);
 
 	Vector2D getPosition();
 	double getX();
 	double getY();
-	aespa_lib::units::PolarAngle getAngle();
+	units::PolarAngle getAngle();
 
 	double getXYMagnitude();
 
 	void setPosition(Vector2D newPosition);
 	void setPosition(double x, double y);
+	void setRotation(units::PolarAngle newRotation);
 
 	void rotateXYBy(units::PolarAngle rotation);
 	void rotateExponentialBy(units::PolarAngle rotation);
@@ -52,7 +53,7 @@ public:
 
 private:
 	Vector2D position;
-	aespa_lib::units::PolarAngle rotation;
+	units::PolarAngle rotation;
 };
 
 }
