@@ -17,6 +17,10 @@ namespace units {
 Length::Length(double value_tiles) : value_tiles(value_tiles) {}
 
 Length Length::operator-() { return Length(-value_tiles); }
+Length Length::operator+(Length other) { return Length(value_tiles + other.value_tiles); }
+Length Length::operator-(Length other) { return Length(value_tiles - other.value_tiles); }
+Length &Length::operator+=(Length other) { value_tiles += other.value_tiles; return *this; }
+Length &Length::operator-=(Length other) { value_tiles -= other.value_tiles; return *this; }
 
 double Length::tiles() { return value_tiles; }
 double Length::in() { return tiles() * inches_per_tile; }
@@ -27,14 +31,16 @@ double Length::m() { return cm() / 100; }
 
 // ---------- Angle ----------
 
-Angle::Angle(double value_fieldDeg) : value_fieldDeg(value_fieldDeg) {}
+PolarAngle::PolarAngle(double value_polarDeg) : value_polarDeg(value_polarDeg) {}
 
-Angle Angle::operator-() { return Angle(-value_fieldDeg); }
+PolarAngle PolarAngle::operator-() { return PolarAngle(-value_polarDeg); }
+PolarAngle PolarAngle::operator+(PolarAngle other) { return value_polarDeg + other.value_polarDeg; }
+PolarAngle PolarAngle::operator-(PolarAngle other) { return value_polarDeg - other.value_polarDeg; }
+PolarAngle &PolarAngle::operator+=(PolarAngle other) { value_polarDeg += other.value_polarDeg; return *this; }
+PolarAngle &PolarAngle::operator-=(PolarAngle other) { value_polarDeg -= other.value_polarDeg; return *this; }
 
-double Angle::fieldDeg() { return value_fieldDeg; }
-double Angle::polarDeg() { return 90 - fieldDeg(); }
-double Angle::fieldRad() { return genutil::toRadians(fieldDeg()); }
-double Angle::polarRad() { return genutil::toRadians(polarDeg()); }
+double PolarAngle::polarDeg() { return value_polarDeg; }
+double PolarAngle::polarRad() { return genutil::toRadians(polarDeg()); }
 
 
 // ---------- Literals ----------
@@ -61,15 +67,11 @@ Length operator ""_m(unsigned long long value) { return operator ""_m((long doub
 
 inline namespace angle {
 
-Angle operator ""_fieldDeg(long double value) { return Angle(value); }
-Angle operator ""_polarDeg(long double value) { return operator ""_fieldDeg(90 - value); }
-Angle operator ""_fieldRad(long double value) { return operator ""_fieldDeg((long double) genutil::toDegrees(value)); }
-Angle operator ""_polarRad(long double value) { return operator ""_polarDeg((long double) genutil::toDegrees(value)); }
+PolarAngle operator ""_polarDeg(long double value) { return PolarAngle(value); }
+PolarAngle operator ""_polarRad(long double value) { return operator ""_polarDeg((long double) genutil::toDegrees(value)); }
 
-Angle operator ""_fieldDeg(unsigned long long value) { return operator ""_fieldDeg((long double) value); }
-Angle operator ""_polarDeg(unsigned long long value) { return operator ""_polarDeg((long double) value); }
-Angle operator ""_fieldRad(unsigned long long value) { return operator ""_fieldRad((long double) value); }
-Angle operator ""_polarRad(unsigned long long value) { return operator ""_polarRad((long double) value); }
+PolarAngle operator ""_polarDeg(unsigned long long value) { return operator ""_polarDeg((long double) value); }
+PolarAngle operator ""_polarRad(unsigned long long value) { return operator ""_polarRad((long double) value); }
 
 }
 

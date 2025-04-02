@@ -12,6 +12,10 @@ public:
 	Length(double value_tiles);
 
 	Length operator-();
+	Length operator+(Length other);
+	Length operator-(Length other);
+	Length &operator+=(Length other);
+	Length &operator-=(Length other);
 
 	double tiles();
 	double in();
@@ -26,19 +30,21 @@ private:
 
 // ---------- Angle ----------
 
-class Angle {
+class PolarAngle {
 public:
-	Angle(double value_fieldDeg);
+	PolarAngle(double value_polarDeg);
 
-	Angle operator-();
+	PolarAngle operator-();
+	PolarAngle operator+(PolarAngle other);
+	PolarAngle operator-(PolarAngle other);
+	PolarAngle &operator+=(PolarAngle other);
+	PolarAngle &operator-=(PolarAngle other);
 
-	double fieldDeg();
 	double polarDeg();
-	double fieldRad();
 	double polarRad();
 
 private:
-	double value_fieldDeg;
+	double value_polarDeg;
 };
 
 
@@ -66,15 +72,11 @@ Length operator ""_m(unsigned long long value);
 
 inline namespace angle {
 
-Angle operator ""_fieldDeg(long double value);
-Angle operator ""_polarDeg(long double value);
-Angle operator ""_fieldRad(long double value);
-Angle operator ""_polarRad(long double value);
+PolarAngle operator ""_polarDeg(long double value);
+PolarAngle operator ""_polarRad(long double value);
 
-Angle operator ""_fieldDeg(unsigned long long value);
-Angle operator ""_polarDeg(unsigned long long value);
-Angle operator ""_fieldRad(unsigned long long value);
-Angle operator ""_polarRad(unsigned long long value);
+PolarAngle operator ""_polarDeg(unsigned long long value);
+PolarAngle operator ""_polarRad(unsigned long long value);
 
 }
 
