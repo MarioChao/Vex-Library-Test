@@ -188,6 +188,10 @@ void runDriveTrajectory(double distance_tiles, std::vector<std::pair<double, dou
 
 void testTrajectory() {
 	clearSplines();
+	pushNewSpline("test",
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
+			{{2.54, 0.49}, {1.54, 0.47}, {0.47, 0.94}, {1.32, 1.59}, {1.54, 0.47}, {1.5, -0.46}}
+			}));
 	pushNewSpline("big curvature 1",
 		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
 		{{1.59, -0.42}, {1.52, 0.5}, {1.49, 0.81}, {0.48, 1}, {1.55, 1.02}, {2.51, 1}, {1.57, 1.28}, {1.53, 1.81}, {1.53, 2.79}}
@@ -216,19 +220,17 @@ void testTrajectory() {
 		{3, 0.48}, {3.02, -0.22},
 			})
 			);
-	pushNewSpline("test",
-		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
-			{{2.54, 0.49}, {1.54, 0.47}, {0.47, 0.94}, {1.32, 1.59}, {1.54, 0.47}, {1.5, -0.46}}
-			}));
 	runFollowSpline("test");
 	runFollowSpline("big curvature 1");
 	runFollowSpline("love shape");
+	runFollowSpline("m shape");
 	runFollowSpline("field tour");
-	// runFollowSpline("m shape");
 }
 
 void test1DTrajectory() {
 	runDriveTrajectory(1, { {0, 75} });
+	runDriveTrajectory(-1, { {0, 75} });
+	runDriveTrajectory(-1, { {0, 20}, {0.5, 60} });
 }
 
 void testIntegral() {
