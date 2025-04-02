@@ -18,8 +18,7 @@ struct Vector2D {
 };
 
 // Class containing 2D position & rotation data
-class Linegular {
-public:
+struct Linegular {
 	Linegular(Vector2D position, units::PolarAngle rotation);
 
 	/**
@@ -45,13 +44,15 @@ public:
 	void rotateXYBy(units::PolarAngle rotation);
 	void rotateExponentialBy(units::PolarAngle rotation);
 
-	Linegular operator+(Linegular &other);
-	Linegular operator-(Linegular &other);
+	Linegular operator+(Linegular other);
+	Linegular operator-(Linegular other);
+	Linegular &operator+=(Linegular other);
+	Linegular &operator-=(Linegular other);
 
 	Linegular operator*(double value);
 	Linegular operator/(double value);
 
-private:
+
 	Vector2D position;
 	units::PolarAngle rotation;
 };

@@ -85,12 +85,26 @@ void Linegular::rotateExponentialBy(units::PolarAngle rotation) {
 	position.rotateExponentialBy(rotation);
 }
 
-Linegular Linegular::operator+(Linegular &other) {
+Linegular Linegular::operator+(Linegular other) {
 	return Linegular(getX() + other.getX(), getY() + other.getY(), rotation + other.rotation);
 }
 
-Linegular Linegular::operator-(Linegular &other) {
+Linegular Linegular::operator-(Linegular other) {
 	return Linegular(getX() - other.getX(), getY() - other.getY(), rotation - other.rotation);
+}
+
+Linegular &Linegular::operator+=(Linegular other) {
+	position.x += other.getX();
+	position.y += other.getY();
+	rotation += other.rotation;
+	return *this;
+}
+
+Linegular &Linegular::operator-=(Linegular other) {
+	position.x -= other.getX();
+	position.y -= other.getY();
+	rotation -= other.rotation;
+	return *this;
 }
 
 Linegular Linegular::operator*(double value) {
