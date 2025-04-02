@@ -34,7 +34,7 @@ public:
 	Vector2D getPosition();
 	double getX();
 	double getY();
-	units::PolarAngle getAngle();
+	units::PolarAngle getRotation();
 
 	double getXYMagnitude();
 

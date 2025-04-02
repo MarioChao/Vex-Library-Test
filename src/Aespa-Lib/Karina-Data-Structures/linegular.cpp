@@ -57,7 +57,7 @@ double Linegular::getY() {
 	return position.y;
 }
 
-units::PolarAngle Linegular::getAngle() {
+units::PolarAngle Linegular::getRotation() {
 	return rotation;
 }
 
