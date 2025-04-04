@@ -211,6 +211,14 @@ double CurveSampler::distanceToParam(double distance) {
 	return 0;
 }
 
+std::vector<double> CurveSampler::integerParamsToDistances() {
+	std::vector<double> result;
+	for (int t = 0; t < (int) spline.get()->getSegmentCount(); t++) {
+		result.push_back(paramToDistance(t));
+	}
+	return result;
+}
+
 
 }
 }

@@ -25,8 +25,8 @@ void testIntegral() {
 int main() {
 	printf("%.10f\n", (-2000.0_in + 200_in).m());
 	printf("%.10f\n", (-90_polarDeg).polarRad());
-	testSpline();
-	// testTrajectory();
+	// testSpline();
+	testTrajectory();
 	// test1DTrajectory();
 	// testIntegral();
 }

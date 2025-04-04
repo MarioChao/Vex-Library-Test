@@ -44,7 +44,7 @@ void saveCurvePoints(CurveSampler *curveSampler) {
 void sampleSpline(SplineCurve *spline) {
 	CurveSampler curveSampler = CurveSampler(*spline)
 		.calculateByResolution(spline->getTRange().second * 10);
-	printf("D: %.7f\n", curveSampler.getDistanceRange().second);
+	printf("T: %.3f, D: %.7f\n", spline->getTRange().second, curveSampler.getDistanceRange().second);
 	saveCurvePoints(&curveSampler);
 }
 }

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <fstream>
 #include <vector>
+#include <cmath>
 
 
 namespace {
@@ -58,7 +59,10 @@ void saveTrajectoryGraph(TrajectoryPlanner *motionProfile, SplineProfile *spline
 	file_accel << "time, maxA, minA, right accel, left accel, accel\n";
 	file_curvature << "time, curvature, smoothed curvature, factorR, factorL, zero\n";
 
-	double prevLeftVelocity = 0, prevRightVelocity = 0, prevT;
+	double prevT;
+	double prevLeftVelocity = 0, prevRightVelocity = 0;
+	double prevLeftAccel = 0, prevRightAccel = 0;
+	double prevK = 0;
 	for (int mt = -100; mt <= 1000 * motionProfile->getTotalTime() + 101; mt += 5) {
 		double t = mt / 1000.0;
 		std::pair<double, std::vector<double>> motion = motionProfile->getMotionAtTime(t);
@@ -84,6 +88,9 @@ void saveTrajectoryGraph(TrajectoryPlanner *motionProfile, SplineProfile *spline
 		prevT = t;
 		prevLeftVelocity = leftVelocity;
 		prevRightVelocity = rightVelocity;
+		prevLeftAccel = leftAccel;
+		prevRightAccel = rightAccel;
+		prevK = curvature;
 
 		file_dis << t;
 		file_dis << ", " << distance;
@@ -125,31 +132,23 @@ void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, do
 		printf("Profile '%s' already exists!\n", profileName.c_str());
 		return;
 	}
-	CurveSampler curveSampler = CurveSampler(spline)
-		.calculateByResolution(spline.getTRange().second * 10);
-	TrajectoryPlanner splineTrajectoryPlan = TrajectoryPlanner(
-		curveSampler.getDistanceRange().second, trackWidth,
-		// 40 + (int) (curveSampler.getDistanceRange().second * 4)
-		64
-	)
-		// .setCurvatureFunction(
-		// 	[&](double d) -> double { return curveSampler.distanceToParam(d); },
-		// 	[&](double t) -> double { return curveSampler.paramToDistance(t); },
-		// 	[&](double t) -> double { return spline.getCurvatureAt(t); }
-		// )
-		.setCurvatureFunction([&](double d) -> double {
-		return spline.getCurvatureAt(curveSampler.distanceToParam(d));
-	})
+	CurveSampler curveSampler = CurveSampler(spline).calculateByResolution(spline.getTRange().second * 10);
+	double totalDistance = curveSampler.getDistanceRange().second;
+	double distanceStep = aespa_lib::genutil::clamp(totalDistance / 64, 0.077, 0.5);
+	// double distanceStep = totalDistance / 64;
+	TrajectoryPlanner splineTrajectoryPlan = TrajectoryPlanner(totalDistance, trackWidth, distanceStep)
+		.setCurvatureFunction(
+			[&](double d) -> double {
+				return spline.getCurvatureAt(curveSampler.distanceToParam(d));
+			},
+			curveSampler.integerParamsToDistances()
+		)
 		.maxSmoothCurvature()
 		.addCenterConstraint_maxMotion({ maxVel, maxAccel })
 		.addTrackConstraint_maxMotion({ maxVel, maxAccel })
 		// .addCenterConstraint_maxMotion({ maxVel, maxAccel, maxAccel * 5 })
 		.calculateMotionProfile();
 	splineStorage.store(profileName, SplineProfile(spline, curveSampler, splineTrajectoryPlan, reverse));
-	// splines.push_back(spline);
-	// splineSamplers.push_back(curveSampler);
-	// splineTrajectoryPlans.push_back(splineTrajectoryPlan);
-	// willReverse.push_back(reverse);
 }
 
 void runFollowSpline(std::string profileName) {

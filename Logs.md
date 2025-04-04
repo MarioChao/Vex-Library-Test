@@ -9,8 +9,14 @@
 
 ## Optimization: Curve Sampling & Trajectory | 2025/04/04
 
-Optimized [curve sampler](./src/Pas1-Lib/Planning/Splines/curve-sampler.cpp) by reducing number of matrix multiplications by 2/3.<br>
-It now integrates using midpoint sum.
+Modified [curve sampler](./src/Pas1-Lib/Planning/Splines/curve-sampler.cpp):
+- Optimization
+	- It now integrates using midpoint sum, which reduces number of matrix multiplications by 2/3.
+
+Modified [trajectory planner](./src/Pas1-Lib/Planning/Trajectories/trajectory-planner.cpp):
+- Changed to accept **distanceStep** instead of **distanceResolution**.
+- `setCurvatureFunction` can accept additional distances to sample at
+- Not much optimization found yet.
 
 
 ## Splines Refactor | 2025/04/03
