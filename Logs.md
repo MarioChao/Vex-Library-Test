@@ -15,7 +15,7 @@ Modified [curve sampler](./src/Pas1-Lib/Planning/Splines/curve-sampler.cpp):
 
 Modified [trajectory planner](./src/Pas1-Lib/Planning/Trajectories/trajectory-planner.cpp):
 - Changed to accept **distanceStep** instead of **distanceResolution**.
-- `setCurvatureFunction` can accept additional distances to sample at
+- `setCurvatureFunction` can accept additional distances to sample at.
 - Not much optimization found yet.
 
 

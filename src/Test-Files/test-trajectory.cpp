@@ -163,7 +163,7 @@ void runFollowSpline(std::string profileName) {
 }
 
 void runDriveTrajectory(double distance_tiles, std::vector<std::pair<double, double>> velocityConstraint_tiles_pct) {
-	TrajectoryPlanner motionProfile(distance_tiles, trackWidth, 64);
+	TrajectoryPlanner motionProfile(distance_tiles, trackWidth, 0.05);
 	ConstraintSequence constraintSequence;
 	for (int i = 0; i < (int) velocityConstraint_tiles_pct.size(); i++) {
 		auto constraint = velocityConstraint_tiles_pct[i];
