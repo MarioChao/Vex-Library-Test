@@ -1,6 +1,7 @@
 #include "Test-Files/test-trajectory.h"
 
 #include "Pas1-Lib/Planning/Splines/spline-curve.h"
+#include "Pas1-Lib/Planning/Splines/curve-sampler.h"
 
 #include <fstream>
 
@@ -8,29 +9,43 @@
 namespace {
 using namespace pas1_lib::planning::segments;
 using pas1_lib::planning::splines::SplineCurve;
+using pas1_lib::planning::splines::CurveSampler;
 
 int fileIndex = 0;
 
-void saveSplinePoints(SplineCurve *spline);
+void saveCurvePoints(CurveSampler *curveSampler);
+
+void sampleSpline(SplineCurve *spline);
 }
 
 namespace {
-void saveSplinePoints(SplineCurve *spline) {
+void saveCurvePoints(CurveSampler *curveSampler) {
+	SplineCurve *spline = &curveSampler->getSpline();
 	std::string filePrefix = std::string("dev-files/splines/") + "spline" + std::to_string(fileIndex);
 	std::ofstream file_points;
 	file_points.open(filePrefix + ".csv");
 	file_points << "t,x,y\n";
 
-	for (int mt = 0; mt <= 1000 * spline->getTRange().second + 0.1; mt += 5) {
-		double t = mt / 1000.0;
-		std::vector<double> posiiton = spline->getPositionAtT(t);
+	// for (int mt = 0; mt <= 1000 * spline->getTRange().second + 0.1; mt += 50) {
+	// 	double t = mt / 1000.0;
+	for (int md = 0; md <= 1000 * curveSampler->getDistanceRange().second + 0.1; md += 50) {
+		double d = md / 1000.0;
+		double t = curveSampler->distanceToParam(d);
+		std::vector<double> positon = spline->getPositionAtT(t);
 
 		file_points << t;
-		file_points << ", " << posiiton[0] << ", " << posiiton[1];
+		file_points << ", " << positon[0] << ", " << positon[1];
 		file_points << "\n";
 	}
 
 	fileIndex++;
+}
+
+void sampleSpline(SplineCurve *spline) {
+	CurveSampler curveSampler = CurveSampler(*spline)
+		.calculateByResolution(spline->getTRange().second * 10);
+	printf("D: %.7f\n", curveSampler.getDistanceRange().second);
+	saveCurvePoints(&curveSampler);
 }
 }
 
@@ -63,5 +78,5 @@ void testSpline() {
 	// 		Cubic_Hermite, {{3, 3}, {6, 6}, {0, 3}, {0, 3}}
 	// 	))
 	// });
-	saveSplinePoints(&spline);
+	sampleSpline(&spline);
 }

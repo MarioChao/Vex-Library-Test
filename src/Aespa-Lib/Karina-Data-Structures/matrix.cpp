@@ -29,6 +29,7 @@ Matrix::Matrix(std::vector<std::vector<double>> matrix_data) {
 	shape = std::make_pair(d1, d2);
 }
 
+int multiplyCnt = 0;
 Matrix Matrix::multiply(Matrix &other) {
 	// Validate possible
 	if (!canMultiply(other)) {
@@ -48,6 +49,8 @@ Matrix Matrix::multiply(Matrix &other) {
 			for (int i = 0; i < d_mid; i++) {
 				double value = data[row][i] * other.data[i][clm];
 				result.data[row][clm] += value;
+				// multiplyCnt++;
+				// printf("%d\n", multiplyCnt);
 			}
 		}
 	}

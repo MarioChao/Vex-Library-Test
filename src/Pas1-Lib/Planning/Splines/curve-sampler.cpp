@@ -49,12 +49,15 @@ CurveSampler &CurveSampler::calculateByResolution(int resolution) {
 	t_cumulativeDistances.clear();
 	t_cumulativeDistances.push_back(CurveParam(t_start, 0));
 
-	// Initialize variables
+	// Declare variables
 	std::vector<double> previousPoint, currentPoint;
-	previousPoint = _getCurvePosition(t_start);
 	double previous_1Prime, current_1Prime, middle_1Prime;
-	previous_1Prime = aespa_lib::genutil::l2Norm(_getCurveFirstPrime(t_start));
-	double previousT = 0;
+	double previousT;
+	
+	// Initialize variables
+	// previousPoint = _getCurvePosition(t_start);
+	// previous_1Prime = aespa_lib::genutil::l2Norm(_getCurveFirstPrime(t_start));
+	previousT = 0;
 
 	double pathLength = 0;
 
@@ -65,15 +68,15 @@ CurveSampler &CurveSampler::calculateByResolution(int resolution) {
 		double deltaT = t - previousT;
 
 		// Get point info
-		currentPoint = _getCurvePosition(t);
-		current_1Prime = aespa_lib::genutil::l2Norm(_getCurveFirstPrime(t));
+		// currentPoint = _getCurvePosition(t);
+		// current_1Prime = aespa_lib::genutil::l2Norm(_getCurveFirstPrime(t));
 		middle_1Prime = aespa_lib::genutil::l2Norm(_getCurveFirstPrime(t - deltaT / 2));
 
 		// Compute segment length
 		double segmentLength;
 
 		// Arc length formula: √[(dx/dt)^2 + (dy/dt)^2]dt
-		switch (4) {
+		switch (3) {
 			case 2:
 				// Method 2: trapezoidal sum
 				segmentLength = (previous_1Prime + current_1Prime) * deltaT / 2;
