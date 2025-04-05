@@ -66,14 +66,15 @@ void saveTrajectoryGraph(TrajectoryPlanner *motionProfile, SplineProfile *spline
 	for (int mt = -100; mt <= 1000 * motionProfile->getTotalTime() + 101; mt += 5) {
 		double t = mt / 1000.0;
 		std::pair<double, std::vector<double>> motion = motionProfile->getMotionAtTime(t);
-		double distance = motion.first;
+		double motion_distance = motion.first;
+		double abs_distance = std::fabs(motion_distance);
 		int degree = motion.second.size();
 		double velocity = motion.second[0];
 		double acceleration = (degree >= 2) ? motion.second[1] : 0;
-		double profile_curvature = motionProfile->getCurvatureAtDistance(distance);
+		double profile_curvature = motionProfile->getCurvatureAtDistance(abs_distance);
 		double curvature = [&]() -> double {
 			if (splineProfile) {
-				double t = splineProfile->curveSampler.distanceToParam(distance);
+				double t = splineProfile->curveSampler.distanceToParam(abs_distance);
 				return splineProfile->spline.getCurvatureAt(t);
 			}
 			return profile_curvature;
@@ -93,7 +94,7 @@ void saveTrajectoryGraph(TrajectoryPlanner *motionProfile, SplineProfile *spline
 		prevK = curvature;
 
 		file_dis << t;
-		file_dis << ", " << distance;
+		file_dis << ", " << motion_distance;
 		file_dis << '\n';
 		file_vel << t;
 		file_vel << ", " << maxVelocity << ", " << -maxVelocity;
@@ -136,7 +137,7 @@ void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, do
 	double totalDistance = curveSampler.getDistanceRange().second;
 	double distanceStep = aespa_lib::genutil::clamp(totalDistance / 64, 0.077, 0.5);
 	// double distanceStep = totalDistance / 64;
-	TrajectoryPlanner splineTrajectoryPlan = TrajectoryPlanner(totalDistance, trackWidth, distanceStep)
+	TrajectoryPlanner splineTrajectoryPlan = TrajectoryPlanner(totalDistance * (reverse ? -1 : 1), trackWidth, distanceStep)
 		.setCurvatureFunction(
 			[&](double d) -> double {
 				return spline.getCurvatureAt(curveSampler.distanceToParam(d));
@@ -191,7 +192,7 @@ void testTrajectory() {
 	pushNewSpline("test",
 		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
 			{{2.54, 0.49}, {1.54, 0.47}, {0.47, 0.94}, {1.32, 1.59}, {1.54, 0.47}, {1.5, -0.46}}
-			}));
+			}), true);
 	pushNewSpline("big curvature 1",
 		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
 		{{1.59, -0.42}, {1.52, 0.5}, {1.49, 0.81}, {0.48, 1}, {1.55, 1.02}, {2.51, 1}, {1.57, 1.28}, {1.53, 1.81}, {1.53, 2.79}}
