@@ -80,8 +80,8 @@ void saveTrajectoryGraph(TrajectoryPlanner *motionProfile, SplineProfile *spline
 			return profile_curvature;
 		}();
 		double factor = profile_curvature * trackWidth / 2;
-		double leftVelocity = velocity * (1 - factor);
-		double rightVelocity = velocity * (1 + factor);
+		double leftVelocity = velocity - std::fabs(velocity) * factor;
+		double rightVelocity = velocity + std::fabs(velocity) * factor;
 		// double leftAccel = acceleration * (1 - factor);
 		// double rightAccel = acceleration * (1 + factor);
 		double leftAccel = (leftVelocity - prevLeftVelocity) / (t - prevT);
