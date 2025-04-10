@@ -144,9 +144,11 @@ void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, do
 			},
 			curveSampler.integerParamsToDistances()
 		)
+		.setSpline(&curveSampler)
 		.maxSmoothCurvature()
 		.addCenterConstraint_maxMotion({ maxVel, maxAccel })
 		.addTrackConstraint_maxMotion({ maxVel, maxAccel })
+		.addCenterConstraint_maxCentripetalAcceleration(maxAccel * 0.2)
 		// .addCenterConstraint_maxMotion({ maxVel, maxAccel, maxAccel * 5 })
 		.calculateMotionProfile();
 	splineStorage.store(profileName, SplineProfile(spline, curveSampler, splineTrajectoryPlan, reverse));
@@ -189,6 +191,10 @@ void runDriveTrajectory(double distance_tiles, std::vector<std::pair<double, dou
 
 void testTrajectory() {
 	clearSplines();
+	pushNewSpline("180",
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, 
+			{ {1.5, -0.94}, {1.5, 0.5}, {1.0, 1.15}, {1.5, 1.73}, {2.0, 1.15}, {1.5, 0.5}, {1.5, -0.94} }
+		), false);
 	pushNewSpline("test",
 		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
 			{{2.54, 0.49}, {1.54, 0.47}, {0.47, 0.94}, {1.32, 1.59}, {1.54, 0.47}, {1.5, -0.46}}
@@ -221,11 +227,12 @@ void testTrajectory() {
 		{3, 0.48}, {3.02, -0.22},
 			})
 			);
+	runFollowSpline("180");
 	runFollowSpline("test");
 	runFollowSpline("big curvature 1");
 	runFollowSpline("love shape");
 	runFollowSpline("m shape");
-	runFollowSpline("field tour");
+	// runFollowSpline("field tour");
 }
 
 void test1DTrajectory() {

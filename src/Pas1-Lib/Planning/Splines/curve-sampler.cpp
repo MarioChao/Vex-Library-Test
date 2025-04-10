@@ -123,6 +123,10 @@ SplineCurve &CurveSampler::getSpline() {
 	return *spline;
 }
 
+aespa_lib::datas::Linegular CurveSampler::getLinegularAtDistance(double distance, bool reverseHeading) {
+	return spline.get()->getLinegularAt(distanceToParam(distance), reverseHeading);
+}
+
 double CurveSampler::paramToDistance(double t) {
 	// Check extreme
 	if (t <= t_cumulativeDistances.front().t) {
