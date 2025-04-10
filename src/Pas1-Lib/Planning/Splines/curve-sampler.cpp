@@ -53,7 +53,7 @@ CurveSampler &CurveSampler::calculateByResolution(int resolution) {
 	std::vector<double> previousPoint, currentPoint;
 	double previous_1Prime, current_1Prime, middle_1Prime;
 	double previousT;
-	
+
 	// Initialize variables
 	// previousPoint = _getCurvePosition(t_start);
 	// previous_1Prime = aespa_lib::genutil::l2Norm(_getCurveFirstPrime(t_start));

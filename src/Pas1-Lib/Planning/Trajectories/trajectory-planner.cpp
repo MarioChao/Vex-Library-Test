@@ -230,7 +230,7 @@ TrajectoryPlanner &TrajectoryPlanner::setCurvatureFunction(
 				if (std::fabs(k) > std::fabs(maxK)) maxK = k;
 			}
 			avgK /= (stepSplit + 1);
-	
+
 			// Modify segment size
 			// segmentK = avgK;
 			segmentK = maxK;
@@ -333,7 +333,7 @@ PlanPoint TrajectoryPlanner::_getNextPlanPoint(
 ) {
 	// Copy node
 	PlanPoint node(originalNode);
-	
+
 	// Get info
 	double oldDistance = node.distance;
 	double originalVelocity = node.motion_dV_dT[0];
