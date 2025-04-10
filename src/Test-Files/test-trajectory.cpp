@@ -18,7 +18,7 @@ using pas1_lib::planning::trajectories::ConstraintSequence;
 using pas1_lib::planning::trajectories::TrajectoryPlanner;
 using pas1_lib::planning::profiles::SplineProfile;
 
-double maxVelocity = 3.628;
+double maxVelocity = 4.288;
 double maxAccel = maxVelocity * 1.5;
 double trackWidth = 0.503937008;
 // double trackWidth = 0;
@@ -147,7 +147,7 @@ void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, do
 		.setSpline(&curveSampler)
 		.maxSmoothCurvature()
 		.addCenterConstraint_maxMotion({ maxVel, maxAccel })
-		.addTrackConstraint_maxMotion({ maxVel, maxAccel })
+		.addTrackConstraint_maxMotion({ maxVel, maxAccel * 0.85 })
 		.addCenterConstraint_maxCentripetalAcceleration(maxAccel * 0.2)
 		// .addCenterConstraint_maxMotion({ maxVel, maxAccel, maxAccel * 5 })
 		.calculateMotionProfile();

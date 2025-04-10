@@ -172,7 +172,7 @@ CentripetalAccelerationConstraint::CentripetalAccelerationConstraint(double maxC
 
 double CentripetalAccelerationConstraint::calculateMaxVelocity(aespa_lib::datas::Linegular pose, double curvature, double velocity) {
 	if (std::fabs(curvature) < 1e-6) return velocity;
-	return std::sqrt(maxCentripetalAcceleration / curvature);
+	return std::sqrt(maxCentripetalAcceleration / std::fabs(curvature));
 }
 
 double getVelocity_trajectoryConstraints(std::vector<std::shared_ptr<TrajectoryConstraint>> constraints, aespa_lib::datas::Linegular pose, double curvature, double velocity) {
