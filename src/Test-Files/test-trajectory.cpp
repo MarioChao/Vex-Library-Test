@@ -18,7 +18,7 @@ using pas1_lib::planning::trajectories::ConstraintSequence;
 using pas1_lib::planning::trajectories::TrajectoryPlanner;
 using pas1_lib::planning::profiles::SplineProfile;
 
-double maxVelocity = 4.288;
+double maxVelocity = 3.216;
 double maxAccel = maxVelocity * 1.5;
 double trackWidth = 0.503937008;
 // double trackWidth = 0;
