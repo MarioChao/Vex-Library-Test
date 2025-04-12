@@ -205,8 +205,8 @@ void testTrajectorySmall() {
 	pushNewSpline("grab goal",
 		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom,
 			{ {2.76, 5.81}, {1.99, 4.98}, {1.15, 3.97}, {1.02, 2.17}, {1, 0.76} }
-		), false
-		,{
+		), false,
+		{
 			new PolygonRegionConstraint(Polygon2D({{0.5, 3}, {1, 2.5}, {1.5, 3}, {1, 3.5}}), maxVelocity * 0.3)
 		}
 	);
@@ -218,39 +218,48 @@ void testTrajectory() {
 	pushNewSpline("180",
 		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom,
 			{ {1.5, -0.94}, {1.5, 0.5}, {1.0, 1.15}, {1.5, 1.73}, {2.0, 1.15}, {1.5, 0.5}, {1.5, -0.94} }
-		), false);
+		), false
+	);
 	pushNewSpline("test",
-		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
-			{{2.54, 0.49}, {1.54, 0.47}, {0.47, 0.94}, {1.32, 1.59}, {1.54, 0.47}, {1.5, -0.46}}
-			}), true);
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom,
+			{ {2.54, 0.49}, {1.54, 0.47}, {0.47, 0.94}, {1.32, 1.59}, {1.54, 0.47}, {1.5, -0.46} }
+		), true
+	);
 	pushNewSpline("big curvature 1",
-		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
-		{{1.59, -0.42}, {1.52, 0.5}, {1.49, 0.81}, {0.48, 1}, {1.55, 1.02}, {2.51, 1}, {1.57, 1.28}, {1.53, 1.81}, {1.53, 2.79}}
-			}));
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom,
+			{ {1.59, -0.42}, {1.52, 0.5}, {1.49, 0.81}, {0.48, 1}, {1.55, 1.02}, {2.51, 1}, {1.57, 1.28}, {1.53, 1.81}, {1.53, 2.79} }
+		)
+	);
 	pushNewSpline(
 		"love shape",
-		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
-		{2.62, 0.09}, {1.52, 0.49}, {0.67, 1.35}, {1.03, 1.97}, {1.54, 1.8},
-		{2.06, 1.95}, {2.49, 1.34}, {1.54, 0.48}, {0.48, 0.05},
-			})
-			);
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom,
+			{
+				{ 2.62, 0.09 }, { 1.52, 0.49 }, { 0.67, 1.35 }, { 1.03, 1.97 }, { 1.54, 1.8 },
+				{ 2.06, 1.95 }, { 2.49, 1.34 }, { 1.54, 0.48 }, { 0.48, 0.05 }
+			}
+		)
+	);
 	pushNewSpline(
 		"m shape",
-		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
-		{2.15, -0.38}, {0.98, 1}, {0.98, 5.02}, {3.02, 1}, {5.02, 5},
-		{5.04, 1.02}, {3.95, -0.38}
-			})
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom,
+			{
+				{2.15, -0.38}, {0.98, 1}, {0.98, 5.02}, {3.02, 1}, {5.02, 5},
+				{5.04, 1.02}, {3.95, -0.38}
+			}
+		)
 	);
 	pushNewSpline(
 		"field tour",
-		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, {
-		{-0.02, -0.07}, {1.36, 0.64}, {2.4, 1.55}, {0.97, 2.99}, {0.42, 4.03},
-		{0.74, 5.28}, {2, 5.54}, {2.01, 3.98}, {3.02, 3}, {4.03, 4.02},
-		{3.02, 4.85}, {3.02, 5.51}, {4.39, 5.49}, {4.67, 4.2}, {5.55, 3.07},
-		{4.65, 1.77}, {5.49, 0.98}, {4.31, 0.42}, {4.02, 1.33}, {3.15, 1.37},
-		{3, 0.48}, {3.02, -0.22},
-			})
-			);
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom,
+			{
+				{-0.02, -0.07}, {1.36, 0.64}, {2.4, 1.55}, {0.97, 2.99}, {0.42, 4.03},
+				{0.74, 5.28}, {2, 5.54}, {2.01, 3.98}, {3.02, 3}, {4.03, 4.02},
+				{3.02, 4.85}, {3.02, 5.51}, {4.39, 5.49}, {4.67, 4.2}, {5.55, 3.07},
+				{4.65, 1.77}, {5.49, 0.98}, {4.31, 0.42}, {4.02, 1.33}, {3.15, 1.37},
+				{3, 0.48}, {3.02, -0.22}
+			}
+		)
+	);
 	runFollowSpline("180");
 	runFollowSpline("test");
 	runFollowSpline("big curvature 1");
