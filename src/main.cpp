@@ -1,5 +1,6 @@
 #include "Test-Files/test-trajectory.h"
 #include "Test-Files/test-spline.h"
+#include "Test-Files/test-polygon.h"
 #include "Aespa-Lib/Winter-Utilities/general.h"
 #include "Aespa-Lib/Winter-Utilities/units.h"
 
@@ -26,7 +27,8 @@ int main() {
 	printf("%.10f\n", (-2000.0_in + 200_in).m());
 	printf("%.10f\n", (-90_polarDeg).polarRad());
 	// testSpline();
-	testTrajectory();
+	// testTrajectory();
 	// test1DTrajectory();
 	// testIntegral();
+	testPolygon();
 }

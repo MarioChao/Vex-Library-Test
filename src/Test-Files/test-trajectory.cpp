@@ -118,6 +118,7 @@ void saveTrajectoryGraph(TrajectoryPlanner *motionProfile, SplineProfile *spline
 	}
 	file_dis.close();
 	file_vel.close();
+	file_ang_vel.close();
 	file_accel.close();
 	file_curvature.close();
 

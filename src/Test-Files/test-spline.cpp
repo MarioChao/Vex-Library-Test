@@ -40,6 +40,7 @@ void saveCurvePoints(CurveSampler *curveSampler) {
 		file_points << ", " << totalDistance - d;
 		file_points << "\n";
 	}
+	file_points.close();
 
 	fileIndex++;
 }
