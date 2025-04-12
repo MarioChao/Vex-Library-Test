@@ -1,6 +1,7 @@
 #include "Test-Files/test-trajectory.h"
 
 #include "Pas1-Lib/Planning/Profiles/spline-profile.h"
+#include "Pas1-Lib/Planning/Trajectories/trajectory-constraint.h"
 #include "Aespa-Lib/Winter-Utilities/general.h"
 #include "Aespa-Lib/Karina-Data-Structures/named-storage.h"
 
@@ -16,6 +17,9 @@ using pas1_lib::planning::splines::SplineCurve;
 using pas1_lib::planning::splines::CurveSampler;
 using pas1_lib::planning::trajectories::ConstraintSequence;
 using pas1_lib::planning::trajectories::TrajectoryPlanner;
+using pas1_lib::planning::trajectories::TrajectoryConstraint;
+using aespa_lib::geometry::Polygon2D;
+using pas1_lib::planning::trajectories::PolygonRegionConstraint;
 using pas1_lib::planning::profiles::SplineProfile;
 
 double maxVelocity = 3.216;
@@ -30,6 +34,7 @@ int pathIndex = 0;
 void saveTrajectoryGraph(TrajectoryPlanner *motionProfile, SplineProfile *splineProfile);
 
 void clearSplines();
+void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, std::vector<TrajectoryConstraint *> constraints, double maxVel = maxVelocity);
 void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse = false, double maxVel = maxVelocity);
 void runFollowSpline(std::string profileName);
 
@@ -129,7 +134,7 @@ void clearSplines() {
 	splineStorage.clear();
 }
 
-void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, double maxVel) {
+void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, std::vector<TrajectoryConstraint *> constraints, double maxVel) {
 	if (splineStorage.hasKey(profileName)) {
 		printf("Profile '%s' already exists!\n", profileName.c_str());
 		return;
@@ -141,8 +146,8 @@ void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, do
 	TrajectoryPlanner splineTrajectoryPlan = TrajectoryPlanner(totalDistance * (reverse ? -1 : 1), trackWidth, distanceStep)
 		.setCurvatureFunction(
 			[&](double d) -> double {
-				return spline.getCurvatureAt(curveSampler.distanceToParam(d));
-			},
+		return spline.getCurvatureAt(curveSampler.distanceToParam(d));
+	},
 			curveSampler.integerParamsToDistances()
 		)
 		.setSpline(&curveSampler)
@@ -150,9 +155,14 @@ void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, do
 		.addCenterConstraint_maxMotion({ maxVel, maxAccel })
 		.addTrackConstraint_maxMotion({ maxVel, maxAccel * 0.85 })
 		.addCenterConstraint_maxCentripetalAcceleration(maxAccel * 0.2)
+		.addCenterTrajectoryConstraints(constraints)
 		// .addCenterConstraint_maxMotion({ maxVel, maxAccel, maxAccel * 5 })
 		.calculateMotionProfile();
 	splineStorage.store(profileName, SplineProfile(spline, curveSampler, splineTrajectoryPlan, reverse));
+}
+
+void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, double maxVel) {
+	pushNewSpline(profileName, spline, reverse, {}, maxVel);
 }
 
 void runFollowSpline(std::string profileName) {
@@ -190,10 +200,23 @@ void runDriveTrajectory(double distance_tiles, std::vector<std::pair<double, dou
 }
 
 
+void testTrajectorySmall() {
+	clearSplines();
+	pushNewSpline("grab goal",
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom,
+			{ {2.76, 5.81}, {1.99, 4.98}, {1.15, 3.97}, {1.02, 2.17}, {1, 0.76} }
+		), false
+		,{
+			new PolygonRegionConstraint(Polygon2D({{0.5, 3}, {1, 2.5}, {1.5, 3}, {1, 3.5}}), maxVelocity * 0.3)
+		}
+	);
+	runFollowSpline("grab goal");
+}
+
 void testTrajectory() {
 	clearSplines();
 	pushNewSpline("180",
-		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom, 
+		SplineCurve::fromAutoTangent_cubicSpline(CatmullRom,
 			{ {1.5, -0.94}, {1.5, 0.5}, {1.0, 1.15}, {1.5, 1.73}, {2.0, 1.15}, {1.5, 0.5}, {1.5, -0.94} }
 		), false);
 	pushNewSpline("test",
