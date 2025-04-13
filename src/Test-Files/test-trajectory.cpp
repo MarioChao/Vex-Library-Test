@@ -166,6 +166,11 @@ void pushNewSpline(std::string profileName, SplineCurve spline, bool reverse, do
 }
 
 void runFollowSpline(std::string profileName) {
+	if (!splineStorage.hasKey(profileName)) {
+		printf("Profile %s not stored!\n", profileName.c_str());
+		return;
+	}
+
 	SplineProfile *profile = splineStorage.getStored(profileName).get();
 	SplineCurve spline = profile->spline;
 	CurveSampler curveSampler = profile->curveSampler;
