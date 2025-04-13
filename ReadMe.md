@@ -12,6 +12,15 @@ The included libraries are:
 - [Pas1 Library](./include/Pas1-Lib/) (Path Planning): utility library for coding **autonomous**
 
 
+## Set up
+
+To compile the program, use the `make` command in the terminal.
+This creates the `all` executable file that you can run locally.
+
+The test files are saved to the directories `/dev-files/paths/`, `/dev-files/polygons/`, etc.<br>
+Make sure these folders exist in order for the test data to appear!
+
+
 ## Test Graphs
 
 Check [graphs.ipynb](/graphs.ipynb) to see a visualized view of test results!
