@@ -43,6 +43,18 @@ Vector2D Vector2D::getNormalized() {
 	return Vector2D(x / magnitude, y / magnitude);
 }
 
+Vector2D Vector2D::operator-() {
+	return Vector2D(-x, -y);
+}
+
+Vector2D Vector2D::operator+(Vector2D other) {
+	return Vector2D(x + other.x, y + other.y);
+}
+
+Vector2D Vector2D::operator-(Vector2D other) {
+	return *this + -other;
+}
+
 double Vector2D::cross_scalar(Vector2D other) {
 	return x * other.y - y * other.x;
 }

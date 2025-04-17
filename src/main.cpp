@@ -31,6 +31,12 @@ int main() {
 	printf("Cross: %.10f\n", Vector2D(0, 2).cross_scalar(Vector2D(2, 0)));
 	printf("Dot: %.10f\n", Vector2D(0, 2).dot(Vector2D(2, 0)));
 	printf("Angle: %.10f\n", Vector2D(0, 2).angle_unsigned(Vector2D(2, 0)).polarDeg());
+	Vector2D vectorNeg = -Vector2D(0, 2);
+	Vector2D vectorAdd = Vector2D(0, 2) + Vector2D(2, 0);
+	Vector2D vectorMinus = Vector2D(0, 2) - Vector2D(2, 0);
+	printf("Neg: %.10f %.10f\n", vectorNeg.x, vectorNeg.y);
+	printf("Add: %.10f %.10f\n", vectorAdd.x, vectorAdd.y);
+	printf("Minus: %.10f %.10f\n", vectorMinus.x, vectorMinus.y);
 	// testSpline();
 	// testTrajectorySmall();
 	// testTrajectory();
