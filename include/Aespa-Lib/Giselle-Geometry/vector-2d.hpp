@@ -23,7 +23,7 @@ struct Vector2D {
 
 	double cross_scalar(Vector2D other);
 	double dot(Vector2D other);
-	units::PolarAngle angle_unsigned(Vector2D other);
+	units::PolarAngle angleFrom(Vector2D other);
 
 	double x, y;
 };

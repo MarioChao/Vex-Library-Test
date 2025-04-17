@@ -63,10 +63,10 @@ double Vector2D::dot(Vector2D other) {
 	return x * other.x + y * other.y;
 }
 
-units::PolarAngle Vector2D::angle_unsigned(Vector2D other) {
-	double radians = std::acos(dot(other) / getMagnitude() / other.getMagnitude());
-	int sign = cross_scalar(other);
-	return units::operator ""_polarRad((long double) radians);
+units::PolarAngle Vector2D::angleFrom(Vector2D other) {
+	double this_radians = std::atan2(y, x);
+	double other_radians = std::atan2(other.y, other.x);
+	return units::operator ""_polarRad((long double) this_radians - other_radians);
 }
 
 

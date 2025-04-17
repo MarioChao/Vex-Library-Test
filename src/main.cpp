@@ -30,7 +30,7 @@ int main() {
 	printf("%.10f\n", (-90_polarDeg).polarRad());
 	printf("Cross: %.10f\n", Vector2D(0, 2).cross_scalar(Vector2D(2, 0)));
 	printf("Dot: %.10f\n", Vector2D(0, 2).dot(Vector2D(2, 0)));
-	printf("Angle: %.10f\n", Vector2D(0, 2).angle_unsigned(Vector2D(2, 0)).polarDeg());
+	printf("Angle: %.10f\n", Vector2D(2, 0).angleFrom(Vector2D(0, 2)).polarDeg());
 	Vector2D vectorNeg = -Vector2D(0, 2);
 	Vector2D vectorAdd = Vector2D(0, 2) + Vector2D(2, 0);
 	Vector2D vectorMinus = Vector2D(0, 2) - Vector2D(2, 0);
